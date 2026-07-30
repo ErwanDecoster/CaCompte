@@ -22,6 +22,7 @@ struct JoinMatchView: View {
     /// (`LiveMatchModel.startSharing`), donc toujours joignable ici.
     @State private var bleTransport = BLETransport(deviceName: UIDevice.current.name)
     @State private var backgroundTaskID: UIBackgroundTaskIdentifier = .invalid
+    @State private var handoverRetryTask: Task<Void, Never>?
     @State private var discoveredHosts: [DiscoveredHost] = []
     @State private var hostAwaitingCode: DiscoveredHost?
     @State private var pairingCode = ""
@@ -94,6 +95,14 @@ struct JoinMatchView: View {
         }
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .background {
+                beginBLEHandoverIfNeeded()
+            }
+        }
+        // Doc utilisateur — remontée : le lien peut retomber plusieurs fois de suite pendant un
+        // même passage en arrière-plan (une seule tentative au moment de backgrounder ne suffit
+        // pas) — sans ça, il fallait rouvrir l'app et taper « Se reconnecter » à chaque fois.
+        .onChange(of: sharedModel?.isHostConnected) { _, isConnected in
+            if isConnected == false {
                 beginBLEHandoverIfNeeded()
             }
         }
@@ -291,28 +300,44 @@ struct JoinMatchView: View {
         // réel, pas le souhait initial, sinon l'écran propose de saisir des manches qui seront
         // rejetées en silence côté hôte.
         let assignedRole = await liveSession.currentRole()
+        // Doc utilisateur — centralisé ici (plutôt que chez chaque appelant) : avec les
+        // reconnexions automatiques répétées (`beginBLEHandoverIfNeeded`), laisser une ancienne
+        // session sans jamais fermer ses tâches (`SharedMatchModel.tasks`) accumulerait des
+        // écouteurs orphelins sur des flux déjà morts à chaque cycle.
+        let previousModel = sharedModel
         sharedModel = SharedMatchModel(session: liveSession, role: assignedRole, catalog: catalog)
         connectedMatchID = host.id
+        await previousModel?.closeConnection()
     }
 
     /// Doc utilisateur — remontée : au passage en arrière-plan, la connexion Wi-Fi meurt (pas
     /// d'entitlement réseau en tâche de fond) et l'écran verrouillé du pair se fige sans le dire.
     /// Le Bluetooth bénéficie d'un vrai mode d'arrière-plan (`bluetooth-central`, Info.plist) : on
     /// bascule dessus dans la fenêtre de grâce que `beginBackgroundTask` obtient avant que l'app ne
-    /// soit vraiment suspendue (de l'ordre de 30 s).
+    /// soit vraiment suspendue.
+    ///
+    /// Doc utilisateur — remontée (recette physique) : une seule tentative au moment de
+    /// backgrounder ne suffisait pas — le lien BLE peut retomber plusieurs fois de suite pendant
+    /// un même passage en arrière-plan, sans que rien ne le retente automatiquement. Boucle tant
+    /// que le lien manque, l'app reste en arrière-plan, et que le système ne réclame pas la
+    /// fenêtre de grâce (`expirationHandler`, seule vraie limite ici — pas un nombre d'essais
+    /// choisi arbitrairement).
     private func beginBLEHandoverIfNeeded() {
         guard sharedModel != nil, let matchID = connectedMatchID, backgroundTaskID == .invalid else { return }
         backgroundTaskID = UIApplication.shared.beginBackgroundTask(withName: "cacompte.ble-handover") {
+            handoverRetryTask?.cancel()
             Task { @MainActor in endBackgroundTaskIfNeeded() }
         }
         guard backgroundTaskID != .invalid else { return }
-        Task {
+        handoverRetryTask = Task {
             // Doc utilisateur : un aller-retour très bref (notification vérifiée puis retour) ne
-            // justifie pas de perturber une connexion Wi-Fi qui a de bonnes chances de survivre —
-            // seul un passage en arrière-plan qui dure déclenche le basculement.
+            // justifie pas de perturber une connexion qui a de bonnes chances de survivre — seul
+            // un passage en arrière-plan qui dure déclenche le basculement.
             try? await Task.sleep(for: .seconds(3))
-            if UIApplication.shared.applicationState == .background {
+            while !Task.isCancelled, UIApplication.shared.applicationState == .background, sharedModel?.isHostConnected != true {
                 await performBLEHandover(matchID: matchID)
+                guard !Task.isCancelled, sharedModel?.isHostConnected != true else { break }
+                try? await Task.sleep(for: .seconds(10))
             }
             endBackgroundTaskIfNeeded()
         }
@@ -321,14 +346,10 @@ struct JoinMatchView: View {
     private func performBLEHandover(matchID: UUID) async {
         guard let host = await discoverHost(via: bleTransport, matchID: matchID, timeout: .seconds(8)) else { return }
         guard !Task.isCancelled else { return }
-        let previousModel = sharedModel
         // Doc utilisateur : si le basculement échoue (Bluetooth désactivé, hôte hors de
-        // portée…), on retombe sur le comportement déjà géré — `isHostConnected` passe à `false`
-        // via `hostLeft`, reconnexion manuelle possible au retour au premier plan. Le Wi-Fi
-        // allait de toute façon mourir en arrière-plan, rien n'est perdu à essayer.
-        if (try? await establishConnection(via: bleTransport, to: host)) != nil {
-            await previousModel?.closeConnection()
-        }
+        // portée…), on retombe sur le comportement déjà géré — `isHostConnected` reste à `false`,
+        // la boucle appelante retentera après le délai. Rien n'est perdu à essayer.
+        try? await establishConnection(via: bleTransport, to: host)
     }
 
     private func endBackgroundTaskIfNeeded() {
