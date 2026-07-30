@@ -294,6 +294,12 @@ final class BLECentralDelegate: NSObject, CBCentralManagerDelegate, CBPeripheral
 
     private var manager: CBCentralManager!
     private var peripheralsByMatchID: [UUID: CBPeripheral] = [:]
+    /// Doc utilisateur P9 — remontée (recette physique) : une fois un hôte « peeké » une
+    /// première fois, `didDiscover` l'ignorait pour toujours (`peripheralsByMatchID` ne
+    /// s'oubliait jamais) — la toute première reconnexion réussissait, mais plus aucune ensuite,
+    /// ni automatique ni via « Se reconnecter ». Republier l'info déjà lue à chaque nouvelle
+    /// annonce, plutôt que de re-« peeker », permet de redécouvrir un hôte déjà connu.
+    private var cachedHosts: [UUID: DiscoveredHost] = [:]
     private var peekingPeripherals: Set<ObjectIdentifier> = []
     private var discoveryContinuation: AsyncStream<DiscoveredHost>.Continuation?
     private var activeSession: BLECentralSession?
@@ -347,7 +353,15 @@ final class BLECentralDelegate: NSObject, CBCentralManagerDelegate, CBPeripheral
     func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral, advertisementData: [String: Any], rssi RSSI: NSNumber) {
         let key = ObjectIdentifier(peripheral)
         guard !peekingPeripherals.contains(key) else { return }
-        guard !peripheralsByMatchID.values.contains(where: { $0.identifier == peripheral.identifier }) else { return }
+        if let knownMatchID = peripheralsByMatchID.first(where: { $0.value.identifier == peripheral.identifier })?.key {
+            // Doc utilisateur — déjà « peeké » par le passé : republier l'info déjà connue plutôt
+            // que de rester silencieux, sinon cet hôte ne redevient jamais trouvable après la
+            // toute première fois (voir doc sur `cachedHosts`).
+            if let cached = cachedHosts[knownMatchID] {
+                discoveryContinuation?.yield(cached)
+            }
+            return
+        }
         peekingPeripherals.insert(key)
         peripheral.delegate = self
         manager.connect(peripheral) // connexion brève, juste pour lire la caractéristique d'info
@@ -409,7 +423,9 @@ final class BLECentralDelegate: NSObject, CBCentralManagerDelegate, CBPeripheral
             guard let info = try? JSONDecoder().decode(BLEHostInfo.self, from: value) else { return }
             peripheralsByMatchID[info.matchID] = peripheral
             peekingPeripherals.remove(ObjectIdentifier(peripheral))
-            discoveryContinuation?.yield(DiscoveredHost(id: info.matchID, deviceName: info.deviceName, gameID: info.gameID, participantCount: info.participantCount, platform: info.platform))
+            let discovered = DiscoveredHost(id: info.matchID, deviceName: info.deviceName, gameID: info.gameID, participantCount: info.participantCount, platform: info.platform)
+            cachedHosts[info.matchID] = discovered
+            discoveryContinuation?.yield(discovered)
             manager.cancelPeripheralConnection(peripheral) // lecture seule : `connect(to:)` reconnectera pour de bon
         } else if characteristic.uuid == BLETransport.notifyCharUUID {
             activeSession?.receiveChunk(value)
