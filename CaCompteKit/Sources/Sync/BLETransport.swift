@@ -66,8 +66,16 @@ public final class BLETransport: NSObject, Transport, @unchecked Sendable {
         acceptedStream
     }
 
+    /// Doc utilisateur P9 — remontée (« Se reconnecter » restait bloqué en chargement) : une
+    /// nouvelle instance de `BLECentralDelegate` à chaque appel voulait dire un nouveau
+    /// `CBCentralManager` à chaque fois — Apple documente explicitement qu'une seule instance par
+    /// app est le fonctionnement supporté, en créer plusieurs produit un comportement non garanti
+    /// (état `.poweredOn` qui n'arrive jamais, scan qui ne démarre pas). `reconnect()` et
+    /// `beginBLEHandoverIfNeeded` (`JoinMatchView`) sont les premiers appelants à redécouvrir
+    /// plusieurs fois sur le même `BLETransport` — jusqu'ici chaque tentative de rejoindre
+    /// repartait d'un `BLETransport` fraîchement créé, ce bug restait invisible.
     public func discover(timeout: Duration) -> AsyncStream<DiscoveredHost> {
-        let delegate = BLECentralDelegate()
+        let delegate = centralDelegate ?? BLECentralDelegate()
         centralDelegate = delegate
         return delegate.discover(timeout: timeout)
     }
@@ -246,10 +254,22 @@ final class BLEPeripheralSession: TransportSession, @unchecked Sendable {
         }
     }
 
+    /// Doc utilisateur P9 — remontée (une manche sur deux n'arrivait jamais côté pair en
+    /// arrière-plan) : sans limite, une notification qu'aucun central n'écoute plus vraiment
+    /// (lien BLE mort côté pair, mais `didUnsubscribeFrom` pas encore reçu — la supervision BLE
+    /// peut prendre bien plus longtemps qu'un `updateValue` à réessayer) bloquait cette boucle
+    /// indéfiniment, silencieusement : `syncSharedLogIfNeeded` (hôte) restait bloqué pour de bon
+    /// sur cette manche, sans jamais échouer ni réessayer la suivante. Une limite fait échouer
+    /// proprement plutôt que de rester bloqué sans fin.
+    private static let maxUpdateAttempts = 250 // ~5 s à 20 ms/tentative
+
     func send(_ data: Data) async throws {
         guard let manager else { throw BLETransportError.connectionFailed }
         for chunk in BLEFraming.frame(data) {
+            var attempts = 0
             while !manager.updateValue(chunk, for: notifyChar, onSubscribedCentrals: [central]) {
+                attempts += 1
+                guard attempts < Self.maxUpdateAttempts else { throw BLETransportError.connectionFailed }
                 try await Task.sleep(for: .milliseconds(20))
             }
         }
