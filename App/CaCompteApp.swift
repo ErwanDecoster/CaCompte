@@ -39,6 +39,12 @@ struct CaCompteApp: App {
                 guard let payload = JoinLink.parse(url) else { return }
                 deepLinkRouter.pendingJoin = payload
             }
+            // Doc utilisateur « Handoff » (P9) — reprise sur un autre appareil connecté au même
+            // compte iCloud : même pont que `.onOpenURL` ci-dessus, jusqu'à `GamesTabView`.
+            .onContinueUserActivity(MatchContinuation.activityType) { activity in
+                guard let matchID = MatchContinuation.matchID(from: activity) else { return }
+                deepLinkRouter.pendingContinuedMatchID = matchID
+            }
         }
     }
 

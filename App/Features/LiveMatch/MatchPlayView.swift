@@ -13,14 +13,19 @@ struct MatchPlayView: View {
     let catalog: GameCatalog
 
     var body: some View {
-        let entryKind = try? catalog.definition(for: match.gameID, version: match.rulesVersion).scoring.entry.kind
-        switch entryKind {
-        case .categorySheet:
-            YamsSheetView(match: match, context: context, catalog: catalog)
-        case .structured:
-            BeloteRoundView(match: match, context: context, catalog: catalog)
-        default:
-            LiveMatchView(match: match, context: context, catalog: catalog)
+        let definition = try? catalog.definition(for: match.gameID, version: match.rulesVersion)
+        Group {
+            switch definition?.scoring.entry.kind {
+            case .categorySheet:
+                YamsSheetView(match: match, context: context, catalog: catalog)
+            case .structured:
+                BeloteRoundView(match: match, context: context, catalog: catalog)
+            default:
+                LiveMatchView(match: match, context: context, catalog: catalog)
+            }
+        }
+        .userActivity(MatchContinuation.activityType) { activity in
+            MatchContinuation.configure(activity, for: match, gameName: definition?.name.fr)
         }
     }
 }

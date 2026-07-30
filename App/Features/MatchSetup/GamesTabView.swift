@@ -139,6 +139,14 @@ struct GamesTabView: View {
                 deepLinkRouter.pendingJoin = nil
                 isPresentingJoin = true
             }
+            // Doc utilisateur « Handoff » (P9) — la partie doit déjà exister localement (id
+            // transporté par `NSUserActivity`, doc CloudKit 03) ; si elle n'est pas encore
+            // synchronisée sur cet appareil, la reprise échoue silencieusement.
+            .onChange(of: deepLinkRouter.pendingContinuedMatchID) { _, newValue in
+                guard let newValue else { return }
+                deepLinkRouter.pendingContinuedMatchID = nil
+                activeMatch = try? MatchRepository(context: modelContext).match(withID: newValue)
+            }
             .navigationDestination(item: $activeMatch) { match in
                 MatchPlayView(match: match, context: modelContext, catalog: catalog)
             }

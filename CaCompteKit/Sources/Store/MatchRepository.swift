@@ -149,6 +149,15 @@ public struct MatchRepository {
         return try context.fetch(descriptor)
     }
 
+    /// Doc utilisateur « Handoff » (P9) — résout la partie reprise sur un autre appareil à partir
+    /// du seul id transporté par `NSUserActivity` ; `nil` si elle n'est pas (encore) synchronisée
+    /// localement via CloudKit.
+    public func match(withID id: UUID) throws -> MatchRecord? {
+        var descriptor = FetchDescriptor<MatchRecord>(predicate: #Predicate { $0.id == id })
+        descriptor.fetchLimit = 1
+        return try context.fetch(descriptor).first
+    }
+
     /// Aucune partie jamais créée, terminée ou non — sert à distinguer « premier lancement ».
     public func hasAnyMatch() throws -> Bool {
         var descriptor = FetchDescriptor<MatchRecord>()
