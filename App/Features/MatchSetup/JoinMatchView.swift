@@ -23,6 +23,15 @@ struct JoinMatchView: View {
     @State private var bleTransport = BLETransport(deviceName: UIDevice.current.name)
     @State private var backgroundTaskID: UIBackgroundTaskIdentifier = .invalid
     @State private var handoverRetryTask: Task<Void, Never>?
+    /// Doc utilisateur P9 — remontée (recette physique : connexion qui se rétablit puis casse
+    /// aussitôt, aucune manche ne passe jamais) : `BLECentralDelegate` garde son état de connexion
+    /// en cours dans des propriétés à emplacement unique (`connectContinuation`, `activeSession`,
+    /// `discoveryContinuation`) — pas conçu pour deux tentatives en vol en même temps. Depuis que
+    /// la reconnexion se déclenche aussi automatiquement (`isHostConnected` qui passe à `false`),
+    /// rien n'empêchait ce déclenchement de chevaucher un appui manuel sur « Se reconnecter », ou
+    /// de se chevaucher avec lui-même : chacun écrase l'état de l'autre au même endroit,
+    /// corrompant laquelle des deux tentatives reçoit effectivement la session résolue.
+    @State private var isAttemptingConnection = false
     @State private var discoveredHosts: [DiscoveredHost] = []
     @State private var hostAwaitingCode: DiscoveredHost?
     @State private var pairingCode = ""
@@ -249,15 +258,20 @@ struct JoinMatchView: View {
     }
 
     private func connect(to host: DiscoveredHost) async {
+        guard !isAttemptingConnection else { return }
+        isAttemptingConnection = true
         isConnecting = true
         connectionError = nil
+        defer {
+            isConnecting = false
+            isAttemptingConnection = false
+        }
         do {
             try await establishConnection(via: transport, to: host)
             hostAwaitingCode = nil
         } catch {
             connectionError = Self.describe(error)
         }
-        isConnecting = false
     }
 
     /// Doc utilisateur — reprise après une connexion perdue (app en arrière-plan, coupure
@@ -268,7 +282,9 @@ struct JoinMatchView: View {
     /// demandé sont encore là, `SharedMatchView` a juste besoin d'un nouveau `SharedMatchModel`
     /// une fois la connexion rétablie.
     private func reconnect() async {
-        guard let matchID = connectedMatchID else { return }
+        guard !isAttemptingConnection, let matchID = connectedMatchID else { return }
+        isAttemptingConnection = true
+        defer { isAttemptingConnection = false }
         if let host = await discoverHost(via: transport, matchID: matchID, timeout: .seconds(8)) {
             if (try? await establishConnection(via: transport, to: host)) != nil { return }
         }
@@ -344,6 +360,9 @@ struct JoinMatchView: View {
     }
 
     private func performBLEHandover(matchID: UUID) async {
+        guard !isAttemptingConnection else { return }
+        isAttemptingConnection = true
+        defer { isAttemptingConnection = false }
         guard let host = await discoverHost(via: bleTransport, matchID: matchID, timeout: .seconds(8)) else { return }
         guard !Task.isCancelled else { return }
         // Doc utilisateur : si le basculement échoue (Bluetooth désactivé, hôte hors de
