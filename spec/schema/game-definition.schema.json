@@ -1,0 +1,275 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cacompte.app/spec/schema/game-definition.schema.json",
+  "title": "GameDefinition",
+  "description": "Définition déclarative d'un jeu. Couvre tout ce qui est exprimable en données ; le calcul non trivial est délégué au moteur impératif désigné par 'engine'.",
+  "type": "object",
+  "required": ["id", "specVersion", "rulesVersion", "name", "symbol", "players", "scoring", "engine", "end"],
+  "additionalProperties": false,
+
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$",
+      "description": "Identifiant stable, jamais réutilisé. Ex. 'skyjo', '6-qui-prend'."
+    },
+    "specVersion": {
+      "type": "integer",
+      "const": 1,
+      "description": "Version du FORMAT de ce fichier."
+    },
+    "rulesVersion": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Version des RÈGLES de ce jeu. À incrémenter dès qu'un score calculé peut changer."
+    },
+
+    "name": { "$ref": "#/$defs/localizedString" },
+    "shortDescription": { "$ref": "#/$defs/localizedString" },
+
+    "symbol": {
+      "type": "string",
+      "description": "Nom SF Symbol côté Apple ; l'équivalent Material Symbols est résolu par une table dans chaque app."
+    },
+    "paletteID": {
+      "type": "string",
+      "enum": ["ink", "brass", "teal", "azur", "ambre", "emeraude", "magenta", "ardoise", "cyan", "vermillon", "violet", "olive"],
+      "default": "ink",
+      "description": "Teinte de la vignette du catalogue. Jamais une couleur brute : uniquement un token de la charte."
+    },
+
+    "players": {
+      "type": "object",
+      "required": ["min", "max"],
+      "additionalProperties": false,
+      "properties": {
+        "min": { "type": "integer", "minimum": 1, "maximum": 12 },
+        "max": { "type": "integer", "minimum": 1, "maximum": 12 },
+        "recommended": {
+          "type": "array",
+          "items": { "type": "integer", "minimum": 1, "maximum": 12 }
+        },
+        "teams": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Présent uniquement pour les jeux par équipes (Belote, 1000 Bornes).",
+          "required": ["size"],
+          "properties": {
+            "size": { "type": "integer", "minimum": 2 },
+            "fixed": { "type": "boolean", "default": true }
+          }
+        }
+      }
+    },
+
+    "scoring": {
+      "type": "object",
+      "required": ["direction", "entry"],
+      "additionalProperties": false,
+      "properties": {
+        "direction": {
+          "enum": ["lowestWins", "highestWins", "targetExact"],
+          "description": "'targetExact' : il faut atteindre une valeur précise (Mölkky)."
+        },
+        "aggregation": {
+          "enum": ["cumulative", "lastRoundOnly", "bestRound"],
+          "default": "cumulative"
+        },
+        "roundLabel": { "$ref": "#/$defs/localizedString" },
+        "entry": { "$ref": "#/$defs/scoreEntry" },
+        "modifiers": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/modifier" },
+          "default": []
+        }
+      }
+    },
+
+    "engine": {
+      "type": "string",
+      "pattern": "^[a-z][a-zA-Z0-9.]*\\.v[0-9]+$",
+      "description": "Identifiant du moteur impératif. 'generic.sum.v1' pour les jeux sans calcul particulier. Chaque valeur DOIT exister dans la table du catalogue des deux plateformes."
+    },
+
+    "end": {
+      "type": "object",
+      "required": ["conditions"],
+      "additionalProperties": false,
+      "properties": {
+        "conditions": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/endCondition" },
+          "description": "Évaluées dans l'ordre ; la première satisfaite l'emporte."
+        }
+      }
+    },
+
+    "tieBreak": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "bestSingleRound",
+          "worstSingleRound",
+          "fewestRoundsClosed",
+          "mostRoundsWon",
+          "lowerSecondaryScore",
+          "higherSecondaryScore",
+          "headToHead",
+          "shared"
+        ]
+      },
+      "default": ["shared"],
+      "description": "Appliqués dans l'ordre. 'shared' termine toujours la liste : rang ex æquo partagé."
+    },
+
+    "variants": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/variant" },
+      "default": []
+    },
+
+    "statsProfiles": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": ["standard"],
+      "description": "Profils de statistiques appliqués en fin de partie. Évite tout aiguillage sur gameId dans le moteur de stats."
+    }
+  },
+
+  "$defs": {
+    "localizedString": {
+      "type": "object",
+      "required": ["fr"],
+      "additionalProperties": { "type": "string" },
+      "properties": {
+        "fr": { "type": "string", "minLength": 1 },
+        "en": { "type": "string", "minLength": 1 }
+      }
+    },
+
+    "scoreEntry": {
+      "type": "object",
+      "required": ["kind"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": ["integer", "categorySheet", "structured", "rank", "predictionAndResult"],
+          "description": "Forme de la saisie. 'integer' couvre la majorité des jeux."
+        },
+        "min": { "type": "integer" },
+        "max": { "type": "integer" },
+        "step": { "type": "integer", "minimum": 1, "default": 1 },
+        "allowsNegative": { "type": "boolean", "default": false },
+        "warnBelow": { "type": "integer", "description": "Avertissement non bloquant sous cette valeur." },
+        "warnAbove": { "type": "integer", "description": "Avertissement non bloquant au-dessus de cette valeur." },
+        "categories": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/category" },
+          "description": "Requis si kind = 'categorySheet' (Yams)."
+        },
+        "ranks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "label", "points"],
+            "additionalProperties": false,
+            "properties": {
+              "id": { "type": "string" },
+              "label": { "$ref": "#/$defs/localizedString" },
+              "points": { "type": "integer" }
+            }
+          },
+          "description": "Requis si kind = 'rank' (Président)."
+        }
+      }
+    },
+
+    "category": {
+      "type": "object",
+      "required": ["id", "label", "section", "scoring"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string" },
+        "label": { "$ref": "#/$defs/localizedString" },
+        "section": { "enum": ["upper", "lower"] },
+        "scoring": {
+          "type": "object",
+          "required": ["kind"],
+          "additionalProperties": false,
+          "properties": {
+            "kind": { "enum": ["fixed", "sumOfDice", "multipleOf"] },
+            "value": { "type": "integer" },
+            "max": { "type": "integer" }
+          }
+        }
+      }
+    },
+
+    "modifier": {
+      "type": "object",
+      "required": ["id", "label", "kind"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string" },
+        "label": { "$ref": "#/$defs/localizedString" },
+        "kind": {
+          "enum": ["exclusiveFlag", "flag", "counter"],
+          "description": "'exclusiveFlag' : exactement un participant par manche (le joueur qui ferme). 'flag' : indépendant par participant."
+        },
+        "required": { "type": "boolean", "default": false },
+        "max": { "type": "integer", "description": "Pour kind = 'counter'." }
+      }
+    },
+
+    "endCondition": {
+      "type": "object",
+      "required": ["type"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "enum": ["scoreThreshold", "roundLimit", "targetReached", "allSheetsComplete", "elimination", "manualStop"]
+        },
+        "value": {
+          "type": "integer",
+          "description": "Seuil, nombre de manches, ou cible selon le type."
+        },
+        "valueExpression": {
+          "type": "string",
+          "description": "Alternative à 'value' quand la valeur dépend du nombre de joueurs. Ex. '60 / playerCount' (Wizard)."
+        },
+        "comparison": { "enum": [">=", ">", "==", "<=", "<"], "default": ">=" },
+        "scope": { "enum": ["anyPlayer", "allPlayers", "anyTeam"], "default": "anyPlayer" },
+        "completeRound": {
+          "type": "boolean",
+          "default": true,
+          "description": "true : on termine le tour de table (statut 'finalRound') pour que chacun ait joué autant de manches. false : arrêt immédiat (Mölkky)."
+        },
+        "variantKey": {
+          "type": "string",
+          "description": "Si présent, 'value' est remplacée par la variante choisie par l'utilisateur."
+        }
+      }
+    },
+
+    "variant": {
+      "type": "object",
+      "required": ["id", "label", "kind", "default"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string" },
+        "label": { "$ref": "#/$defs/localizedString" },
+        "help": { "$ref": "#/$defs/localizedString" },
+        "kind": { "enum": ["bool", "integerChoice", "integerRange", "option"] },
+        "values": {
+          "type": "array",
+          "items": { "type": ["integer", "string"] },
+          "description": "Pour 'integerChoice' et 'option'."
+        },
+        "min": { "type": "integer" },
+        "max": { "type": "integer" },
+        "default": { "type": ["integer", "string", "boolean"] }
+      }
+    }
+  }
+}

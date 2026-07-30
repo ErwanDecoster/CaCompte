@@ -1,0 +1,91 @@
+{
+  "goldenId": "petanque-01-seuil-13",
+  "description": "Partie nominale à 2 équipes. Seule l'équipe qui remporte la mène marque (l'autre entre 0). L'équipe A atteint exactement 13 (limite >=) à la mène 3, ce qui arrête la partie.",
+  "gameId": "petanque",
+  "rulesVersion": 1,
+
+  "variants": {},
+
+  "participants": [
+    { "id": "p1", "name": "Équipe A", "seatIndex": 0 },
+    { "id": "p2", "name": "Équipe B", "seatIndex": 1 }
+  ],
+
+  "rounds": [
+    {
+      "index": 0,
+      "inputs": [
+        { "participant": "p1", "rawValue": 4, "modifiers": [] },
+        { "participant": "p2", "rawValue": 0, "modifiers": [] }
+      ]
+    },
+    {
+      "index": 1,
+      "inputs": [
+        { "participant": "p1", "rawValue": 0, "modifiers": [] },
+        { "participant": "p2", "rawValue": 6, "modifiers": [] }
+      ]
+    },
+    {
+      "index": 2,
+      "inputs": [
+        { "participant": "p1", "rawValue": 6, "modifiers": [] },
+        { "participant": "p2", "rawValue": 0, "modifiers": [] }
+      ]
+    },
+    {
+      "index": 3,
+      "inputs": [
+        { "participant": "p1", "rawValue": 3, "modifiers": [] },
+        { "participant": "p2", "rawValue": 0, "modifiers": [] }
+      ]
+    }
+  ],
+
+  "expected": {
+    "roundResults": [
+      {
+        "index": 0,
+        "computed": { "p1": 4, "p2": 0 },
+        "cumulative": { "p1": 4, "p2": 0 },
+        "doubled": [],
+        "status": "inProgress"
+      },
+      {
+        "index": 1,
+        "computed": { "p1": 0, "p2": 6 },
+        "cumulative": { "p1": 4, "p2": 6 },
+        "doubled": [],
+        "status": "inProgress"
+      },
+      {
+        "index": 2,
+        "computed": { "p1": 6, "p2": 0 },
+        "cumulative": { "p1": 10, "p2": 6 },
+        "doubled": [],
+        "status": "inProgress"
+      },
+      {
+        "index": 3,
+        "comment": "L'équipe A atteint exactement 13 : la comparaison >= déclenche la fin sur l'égalité stricte.",
+        "computed": { "p1": 3, "p2": 0 },
+        "cumulative": { "p1": 13, "p2": 6 },
+        "doubled": [],
+        "status": "ended"
+      }
+    ],
+
+    "final": {
+      "status": "ended",
+      "reason": "scoreThreshold",
+      "standings": [
+        { "participant": "p1", "rank": 1, "score": 13 },
+        { "participant": "p2", "rank": 2, "score": 6 }
+      ]
+    },
+
+    "insights": [
+      { "id": "finalGap", "value": 7 }
+    ]
+  }
+}

@@ -1,0 +1,77 @@
+{
+  "goldenId": "skyjo-02-egalite-finale",
+  "description": "Cas limite du classement. Deux joueurs terminent à égalité parfaite (105) et tous les départages échouent : même meilleure manche (50), même nombre de manches fermées (1). Le classement doit produire un rang 1 partagé, puis un rang 3 — jamais un rang 2. Vérifie aussi que deux joueurs franchissant le seuil sur la même manche ne provoquent pas de double déclenchement de fin.",
+  "gameId": "skyjo",
+  "rulesVersion": 1,
+
+  "variants": { "threshold": 100, "doublePenalty": true },
+
+  "participants": [
+    { "id": "p1", "name": "Alice", "seatIndex": 0 },
+    { "id": "p2", "name": "Bob", "seatIndex": 1 },
+    { "id": "p3", "name": "Chloé", "seatIndex": 2 }
+  ],
+
+  "rounds": [
+    {
+      "index": 0,
+      "inputs": [
+        { "participant": "p1", "rawValue": 50, "modifiers": ["closedRound"] },
+        { "participant": "p2", "rawValue": 55, "modifiers": [] },
+        { "participant": "p3", "rawValue": 60, "modifiers": [] }
+      ]
+    },
+    {
+      "index": 1,
+      "inputs": [
+        { "participant": "p1", "rawValue": 55, "modifiers": [] },
+        { "participant": "p2", "rawValue": 50, "modifiers": ["closedRound"] },
+        { "participant": "p3", "rawValue": 62, "modifiers": [] }
+      ]
+    }
+  ],
+
+  "expected": {
+    "roundResults": [
+      {
+        "index": 0,
+        "comment": "Alice ferme avec 50, strictement le plus bas : pas de doublement.",
+        "computed": { "p1": 50, "p2": 55, "p3": 60 },
+        "cumulative": { "p1": 50, "p2": 55, "p3": 60 },
+        "doubled": [],
+        "status": "inProgress"
+      },
+      {
+        "index": 1,
+        "comment": "Bob ferme avec 50, strictement le plus bas : pas de doublement. Alice ET Bob atteignent 105, Chloé 122 : les trois franchissent 100 sur la même manche.",
+        "computed": { "p1": 55, "p2": 50, "p3": 62 },
+        "cumulative": { "p1": 105, "p2": 105, "p3": 122 },
+        "doubled": [],
+        "status": "ended"
+      }
+    ],
+
+    "final": {
+      "status": "ended",
+      "reason": "scoreThreshold",
+      "standings": [
+        { "participant": "p1", "rank": 1, "score": 105, "sharedWith": ["p2"] },
+        { "participant": "p2", "rank": 1, "score": 105, "sharedWith": ["p1"] },
+        { "participant": "p3", "rank": 3, "score": 122 }
+      ],
+      "tieBreakTrace": [
+        { "step": "bestSingleRound", "result": "tie", "values": { "p1": 50, "p2": 50 } },
+        { "step": "fewestRoundsClosed", "result": "tie", "values": { "p1": 1, "p2": 1 } },
+        { "step": "shared", "result": "resolved" }
+      ]
+    },
+
+    "insights": [
+      { "id": "highestRoundScore", "participant": "p3", "value": 62, "round": 1 },
+      { "id": "bestRoundScore", "participant": "p1", "value": 50, "round": 0 },
+      { "id": "finalGap", "value": 0 },
+      { "id": "roundsClosed", "values": { "p1": 1, "p2": 1, "p3": 0 } },
+      { "id": "doublingsSuffered", "values": { "p1": 0, "p2": 0, "p3": 0 } }
+    ]
+  }
+}

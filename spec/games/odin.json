@@ -1,0 +1,58 @@
+{
+  "id": "odin",
+  "specVersion": 1,
+  "rulesVersion": 1,
+
+  "name": { "fr": "Odin", "en": "Odin" },
+  "shortDescription": {
+    "fr": "Défaussez-vous de votre main avant les autres. Chaque manche, vous marquez le nombre de cartes qu'il vous reste en main ; le score le plus bas gagne. La partie s'arrête dès qu'un joueur atteint 15.",
+    "en": "Be first to empty your hand. Each round you score the number of cards left in hand; lowest score wins. The game ends once a player reaches 15."
+  },
+
+  "symbol": "shield.fill",
+  "paletteID": "brass",
+
+  "players": { "min": 2, "max": 6, "recommended": [3, 4, 5] },
+
+  "scoring": {
+    "direction": "lowestWins",
+    "aggregation": "cumulative",
+    "roundLabel": { "fr": "Manche", "en": "Round" },
+    "entry": {
+      "kind": "integer",
+      "min": 0,
+      "max": 9,
+      "allowsNegative": false
+    },
+    "modifiers": []
+  },
+
+  "engine": "generic.sum.v1",
+
+  "end": {
+    "conditions": [
+      {
+        "type": "scoreThreshold",
+        "value": 15,
+        "variantKey": "threshold",
+        "comparison": ">=",
+        "scope": "anyPlayer",
+        "completeRound": true
+      }
+    ]
+  },
+
+  "tieBreak": ["shared"],
+
+  "variants": [
+    {
+      "id": "threshold",
+      "label": { "fr": "Fin de partie à", "en": "Game ends at" },
+      "kind": "integerChoice",
+      "values": [10, 15, 20],
+      "default": 15
+    }
+  ],
+
+  "statsProfiles": ["standard"]
+}

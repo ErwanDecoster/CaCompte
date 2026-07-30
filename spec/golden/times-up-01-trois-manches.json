@@ -1,0 +1,77 @@
+{
+  "goldenId": "times-up-01-trois-manches",
+  "description": "Partie nominale à 2 équipes. La partie s'arrête après exactement 3 manches (les mêmes cartes, decrites puis mimées), quel que soit le score atteint.",
+  "gameId": "times-up",
+  "rulesVersion": 1,
+
+  "variants": {},
+
+  "participants": [
+    { "id": "p1", "name": "Équipe Rouge", "seatIndex": 0 },
+    { "id": "p2", "name": "Équipe Bleue", "seatIndex": 1 }
+  ],
+
+  "rounds": [
+    {
+      "index": 0,
+      "inputs": [
+        { "participant": "p1", "rawValue": 8, "modifiers": [] },
+        { "participant": "p2", "rawValue": 6, "modifiers": [] }
+      ]
+    },
+    {
+      "index": 1,
+      "inputs": [
+        { "participant": "p1", "rawValue": 7, "modifiers": [] },
+        { "participant": "p2", "rawValue": 9, "modifiers": [] }
+      ]
+    },
+    {
+      "index": 2,
+      "inputs": [
+        { "participant": "p1", "rawValue": 6, "modifiers": [] },
+        { "participant": "p2", "rawValue": 5, "modifiers": [] }
+      ]
+    }
+  ],
+
+  "expected": {
+    "roundResults": [
+      {
+        "index": 0,
+        "computed": { "p1": 8, "p2": 6 },
+        "cumulative": { "p1": 8, "p2": 6 },
+        "doubled": [],
+        "status": "inProgress"
+      },
+      {
+        "index": 1,
+        "computed": { "p1": 7, "p2": 9 },
+        "cumulative": { "p1": 15, "p2": 15 },
+        "doubled": [],
+        "status": "inProgress"
+      },
+      {
+        "index": 2,
+        "comment": "Troisième manche jouée : `roundLimit` (3) est atteint, la partie s'arrête quel que soit le score.",
+        "computed": { "p1": 6, "p2": 5 },
+        "cumulative": { "p1": 21, "p2": 20 },
+        "doubled": [],
+        "status": "ended"
+      }
+    ],
+
+    "final": {
+      "status": "ended",
+      "reason": "roundLimit",
+      "standings": [
+        { "participant": "p1", "rank": 1, "score": 21 },
+        { "participant": "p2", "rank": 2, "score": 20 }
+      ]
+    },
+
+    "insights": [
+      { "id": "finalGap", "value": 1 }
+    ]
+  }
+}

@@ -1,0 +1,79 @@
+{
+  "id": "belote",
+  "specVersion": 1,
+  "rulesVersion": 1,
+
+  "name": { "fr": "Belote", "en": "Belote" },
+  "shortDescription": {
+    "fr": "Par équipes de deux. 162 points par donne ; la première équipe à 1000 gagne.",
+    "en": "Two teams of two. 162 points per hand; first team to 1000 wins."
+  },
+
+  "symbol": "suit.club.fill",
+  "paletteID": "violet",
+
+  "players": {
+    "min": 4,
+    "max": 4,
+    "recommended": [4],
+    "teams": { "size": 2, "fixed": true }
+  },
+
+  "scoring": {
+    "direction": "highestWins",
+    "aggregation": "cumulative",
+    "roundLabel": { "fr": "Donne", "en": "Hand" },
+    "entry": {
+      "kind": "structured",
+      "min": 0,
+      "max": 250
+    },
+    "modifiers": [
+      {
+        "id": "isTaker",
+        "label": { "fr": "Équipe preneuse", "en": "Taking team" },
+        "kind": "exclusiveFlag",
+        "required": true
+      },
+      {
+        "id": "capot",
+        "label": { "fr": "Capot", "en": "Capot" },
+        "kind": "flag"
+      },
+      {
+        "id": "beloteRebelote",
+        "label": { "fr": "Belote-rebelote", "en": "Belote-rebelote" },
+        "kind": "flag"
+      }
+    ]
+  },
+
+  "engine": "belote.v1",
+
+  "end": {
+    "conditions": [
+      {
+        "type": "scoreThreshold",
+        "value": 1000,
+        "variantKey": "threshold",
+        "comparison": ">=",
+        "scope": "anyPlayer",
+        "completeRound": true
+      }
+    ]
+  },
+
+  "tieBreak": ["shared"],
+
+  "variants": [
+    {
+      "id": "threshold",
+      "label": { "fr": "Fin de partie à", "en": "Game ends at" },
+      "kind": "integerChoice",
+      "values": [501, 1000, 2000],
+      "default": 1000
+    }
+  ],
+
+  "statsProfiles": ["standard"]
+}

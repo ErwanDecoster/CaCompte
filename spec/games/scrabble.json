@@ -1,0 +1,43 @@
+{
+  "id": "scrabble",
+  "specVersion": 1,
+  "rulesVersion": 1,
+
+  "name": { "fr": "Scrabble", "en": "Scrabble" },
+  "shortDescription": {
+    "fr": "Le score le plus haut gagne ; c'est vous qui décidez quand la partie se termine.",
+    "en": "Highest score wins; you decide when the game ends."
+  },
+
+  "symbol": "textformat.abc",
+  "paletteID": "ambre",
+
+  "players": { "min": 2, "max": 4, "recommended": [2, 3, 4] },
+
+  "scoring": {
+    "direction": "highestWins",
+    "aggregation": "cumulative",
+    "roundLabel": { "fr": "Tour", "en": "Turn" },
+    "entry": {
+      "kind": "integer",
+      "min": 0,
+      "allowsNegative": false
+    },
+    "modifiers": []
+  },
+
+  "engine": "generic.sum.v1",
+
+  "end": {
+    "conditions": [
+      {
+        "type": "manualStop",
+        "scope": "anyPlayer"
+      }
+    ]
+  },
+
+  "tieBreak": ["shared"],
+
+  "statsProfiles": ["standard"]
+}

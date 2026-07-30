@@ -1,0 +1,67 @@
+{
+  "goldenId": "scrabble-01-fin-manuelle",
+  "description": "Partie nominale à 3 joueurs, score le plus haut gagne, arrêt manuel. `manualStop` n'est jamais détecté automatiquement.",
+  "gameId": "scrabble",
+  "rulesVersion": 1,
+
+  "variants": {},
+
+  "participants": [
+    { "id": "p1", "name": "Alice", "seatIndex": 0 },
+    { "id": "p2", "name": "Bob", "seatIndex": 1 },
+    { "id": "p3", "name": "Chloé", "seatIndex": 2 }
+  ],
+
+  "rounds": [
+    {
+      "index": 0,
+      "inputs": [
+        { "participant": "p1", "rawValue": 85, "modifiers": [] },
+        { "participant": "p2", "rawValue": 102, "modifiers": [] },
+        { "participant": "p3", "rawValue": 76, "modifiers": [] }
+      ]
+    },
+    {
+      "index": 1,
+      "inputs": [
+        { "participant": "p1", "rawValue": 90, "modifiers": [] },
+        { "participant": "p2", "rawValue": 45, "modifiers": [] },
+        { "participant": "p3", "rawValue": 110, "modifiers": [] }
+      ]
+    }
+  ],
+
+  "expected": {
+    "roundResults": [
+      {
+        "index": 0,
+        "computed": { "p1": 85, "p2": 102, "p3": 76 },
+        "cumulative": { "p1": 85, "p2": 102, "p3": 76 },
+        "doubled": [],
+        "status": "inProgress"
+      },
+      {
+        "index": 1,
+        "comment": "manualStop n'est jamais détecté automatiquement : le statut reste 'inProgress'.",
+        "computed": { "p1": 90, "p2": 45, "p3": 110 },
+        "cumulative": { "p1": 175, "p2": 147, "p3": 186 },
+        "doubled": [],
+        "status": "inProgress"
+      }
+    ],
+
+    "final": {
+      "status": "inProgress",
+      "reason": null,
+      "standings": [
+        { "participant": "p3", "rank": 1, "score": 186 },
+        { "participant": "p1", "rank": 2, "score": 175 },
+        { "participant": "p2", "rank": 3, "score": 147 }
+      ]
+    },
+
+    "insights": [
+      { "id": "finalGap", "value": 11 }
+    ]
+  }
+}

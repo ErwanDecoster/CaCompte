@@ -1,0 +1,57 @@
+{
+  "id": "triominos",
+  "specVersion": 1,
+  "rulesVersion": 1,
+
+  "name": { "fr": "Triominos", "en": "Triominos" },
+  "shortDescription": {
+    "fr": "Le score le plus haut gagne. La partie s'arrête dès qu'un joueur atteint 400.",
+    "en": "Highest score wins. The game ends once a player reaches 400."
+  },
+
+  "symbol": "triangle.fill",
+  "paletteID": "azur",
+
+  "players": { "min": 2, "max": 6, "recommended": [2, 3, 4] },
+
+  "scoring": {
+    "direction": "highestWins",
+    "aggregation": "cumulative",
+    "roundLabel": { "fr": "Manche", "en": "Round" },
+    "entry": {
+      "kind": "integer",
+      "min": 0,
+      "allowsNegative": false
+    },
+    "modifiers": []
+  },
+
+  "engine": "generic.sum.v1",
+
+  "end": {
+    "conditions": [
+      {
+        "type": "scoreThreshold",
+        "value": 400,
+        "variantKey": "threshold",
+        "comparison": ">=",
+        "scope": "anyPlayer",
+        "completeRound": true
+      }
+    ]
+  },
+
+  "tieBreak": ["shared"],
+
+  "variants": [
+    {
+      "id": "threshold",
+      "label": { "fr": "Fin de partie à", "en": "Game ends at" },
+      "kind": "integerChoice",
+      "values": [300, 400, 500],
+      "default": 400
+    }
+  ],
+
+  "statsProfiles": ["standard"]
+}

@@ -1,0 +1,91 @@
+{
+  "goldenId": "cornhole-01-seuil-21",
+  "description": "Partie nominale à 2 joueurs. Score à l'américaine : seul le camp en tête marque la différence de la manche. Alice atteint exactement 21 (limite >=) à la manche 3, ce qui arrête la partie.",
+  "gameId": "cornhole",
+  "rulesVersion": 1,
+
+  "variants": {},
+
+  "participants": [
+    { "id": "p1", "name": "Alice", "seatIndex": 0 },
+    { "id": "p2", "name": "Bob", "seatIndex": 1 }
+  ],
+
+  "rounds": [
+    {
+      "index": 0,
+      "inputs": [
+        { "participant": "p1", "rawValue": 7, "modifiers": [] },
+        { "participant": "p2", "rawValue": 0, "modifiers": [] }
+      ]
+    },
+    {
+      "index": 1,
+      "inputs": [
+        { "participant": "p1", "rawValue": 0, "modifiers": [] },
+        { "participant": "p2", "rawValue": 9, "modifiers": [] }
+      ]
+    },
+    {
+      "index": 2,
+      "inputs": [
+        { "participant": "p1", "rawValue": 8, "modifiers": [] },
+        { "participant": "p2", "rawValue": 0, "modifiers": [] }
+      ]
+    },
+    {
+      "index": 3,
+      "inputs": [
+        { "participant": "p1", "rawValue": 6, "modifiers": [] },
+        { "participant": "p2", "rawValue": 0, "modifiers": [] }
+      ]
+    }
+  ],
+
+  "expected": {
+    "roundResults": [
+      {
+        "index": 0,
+        "computed": { "p1": 7, "p2": 0 },
+        "cumulative": { "p1": 7, "p2": 0 },
+        "doubled": [],
+        "status": "inProgress"
+      },
+      {
+        "index": 1,
+        "computed": { "p1": 0, "p2": 9 },
+        "cumulative": { "p1": 7, "p2": 9 },
+        "doubled": [],
+        "status": "inProgress"
+      },
+      {
+        "index": 2,
+        "computed": { "p1": 8, "p2": 0 },
+        "cumulative": { "p1": 15, "p2": 9 },
+        "doubled": [],
+        "status": "inProgress"
+      },
+      {
+        "index": 3,
+        "comment": "Alice atteint exactement 21 : la comparaison >= déclenche la fin sur l'égalité stricte.",
+        "computed": { "p1": 6, "p2": 0 },
+        "cumulative": { "p1": 21, "p2": 9 },
+        "doubled": [],
+        "status": "ended"
+      }
+    ],
+
+    "final": {
+      "status": "ended",
+      "reason": "scoreThreshold",
+      "standings": [
+        { "participant": "p1", "rank": 1, "score": 21 },
+        { "participant": "p2", "rank": 2, "score": 9 }
+      ]
+    },
+
+    "insights": [
+      { "id": "finalGap", "value": 12 }
+    ]
+  }
+}

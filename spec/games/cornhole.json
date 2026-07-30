@@ -1,0 +1,47 @@
+{
+  "id": "cornhole",
+  "specVersion": 1,
+  "rulesVersion": 1,
+
+  "name": { "fr": "Cornhole", "en": "Cornhole" },
+  "shortDescription": {
+    "fr": "Score à l'américaine : seul le camp en tête marque la différence de la manche (sac dans le trou = 3, sur la planche = 1). La partie s'arrête dès qu'un score atteint 21.",
+    "en": "Cancellation scoring: only the leading side scores the round's difference (bag in hole = 3, on the board = 1). The game ends once a score reaches 21."
+  },
+
+  "symbol": "circle.grid.cross.fill",
+  "paletteID": "ardoise",
+
+  "players": { "min": 2, "max": 4, "recommended": [2, 4] },
+
+  "scoring": {
+    "direction": "highestWins",
+    "aggregation": "cumulative",
+    "roundLabel": { "fr": "Manche", "en": "Round" },
+    "entry": {
+      "kind": "integer",
+      "min": 0,
+      "max": 12,
+      "allowsNegative": false
+    },
+    "modifiers": []
+  },
+
+  "engine": "generic.sum.v1",
+
+  "end": {
+    "conditions": [
+      {
+        "type": "scoreThreshold",
+        "value": 21,
+        "comparison": ">=",
+        "scope": "anyPlayer",
+        "completeRound": true
+      }
+    ]
+  },
+
+  "tieBreak": ["shared"],
+
+  "statsProfiles": ["standard"]
+}

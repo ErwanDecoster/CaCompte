@@ -1,0 +1,57 @@
+{
+  "id": "pictionary",
+  "specVersion": 1,
+  "rulesVersion": 1,
+
+  "name": { "fr": "Pictionary", "en": "Pictionary" },
+  "shortDescription": {
+    "fr": "Joueurs ou équipes marquent des points en devinant les dessins. La partie s'arrête dès qu'un score atteint le seuil choisi.",
+    "en": "Players or teams score points by guessing drawings. The game ends once a score reaches the chosen threshold."
+  },
+
+  "symbol": "paintbrush.fill",
+  "paletteID": "vermillon",
+
+  "players": { "min": 2, "max": 12, "recommended": [4, 6, 8] },
+
+  "scoring": {
+    "direction": "highestWins",
+    "aggregation": "cumulative",
+    "roundLabel": { "fr": "Manche", "en": "Round" },
+    "entry": {
+      "kind": "integer",
+      "min": 0,
+      "allowsNegative": false
+    },
+    "modifiers": []
+  },
+
+  "engine": "generic.sum.v1",
+
+  "end": {
+    "conditions": [
+      {
+        "type": "scoreThreshold",
+        "value": 20,
+        "variantKey": "threshold",
+        "comparison": ">=",
+        "scope": "anyPlayer",
+        "completeRound": true
+      }
+    ]
+  },
+
+  "tieBreak": ["shared"],
+
+  "variants": [
+    {
+      "id": "threshold",
+      "label": { "fr": "Fin de partie à", "en": "Game ends at" },
+      "kind": "integerChoice",
+      "values": [15, 20, 25],
+      "default": 20
+    }
+  ],
+
+  "statsProfiles": ["standard"]
+}

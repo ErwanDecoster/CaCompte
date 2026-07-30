@@ -1,0 +1,67 @@
+{
+  "goldenId": "rummikub-01-fin-manuelle",
+  "description": "Partie nominale à 3 joueurs, valeurs négatives autorisées (celui qui pose toutes ses tuiles marque la valeur des tuiles restantes des autres ; les autres perdent la valeur des leurs). `manualStop` n'est jamais détecté automatiquement.",
+  "gameId": "rummikub",
+  "rulesVersion": 1,
+
+  "variants": {},
+
+  "participants": [
+    { "id": "p1", "name": "Alice", "seatIndex": 0 },
+    { "id": "p2", "name": "Bob", "seatIndex": 1 },
+    { "id": "p3", "name": "Chloé", "seatIndex": 2 }
+  ],
+
+  "rounds": [
+    {
+      "index": 0,
+      "inputs": [
+        { "participant": "p1", "rawValue": 45, "modifiers": [] },
+        { "participant": "p2", "rawValue": -20, "modifiers": [] },
+        { "participant": "p3", "rawValue": -25, "modifiers": [] }
+      ]
+    },
+    {
+      "index": 1,
+      "inputs": [
+        { "participant": "p1", "rawValue": -10, "modifiers": [] },
+        { "participant": "p2", "rawValue": 30, "modifiers": [] },
+        { "participant": "p3", "rawValue": -20, "modifiers": [] }
+      ]
+    }
+  ],
+
+  "expected": {
+    "roundResults": [
+      {
+        "index": 0,
+        "computed": { "p1": 45, "p2": -20, "p3": -25 },
+        "cumulative": { "p1": 45, "p2": -20, "p3": -25 },
+        "doubled": [],
+        "status": "inProgress"
+      },
+      {
+        "index": 1,
+        "comment": "manualStop n'est jamais détecté automatiquement : le statut reste 'inProgress'.",
+        "computed": { "p1": -10, "p2": 30, "p3": -20 },
+        "cumulative": { "p1": 35, "p2": 10, "p3": -45 },
+        "doubled": [],
+        "status": "inProgress"
+      }
+    ],
+
+    "final": {
+      "status": "inProgress",
+      "reason": null,
+      "standings": [
+        { "participant": "p1", "rank": 1, "score": 35 },
+        { "participant": "p2", "rank": 2, "score": 10 },
+        { "participant": "p3", "rank": 3, "score": -45 }
+      ]
+    },
+
+    "insights": [
+      { "id": "finalGap", "value": 25 }
+    ]
+  }
+}

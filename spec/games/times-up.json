@@ -1,0 +1,46 @@
+{
+  "id": "times-up",
+  "specVersion": 1,
+  "rulesVersion": 1,
+
+  "name": { "fr": "Time's Up !", "en": "Time's Up!" },
+  "shortDescription": {
+    "fr": "Trois manches avec les mêmes cartes (description libre, un mot, mime). Le total de cartes devinées sur les trois manches l'emporte.",
+    "en": "Three rounds with the same cards (free description, one word, charades). The highest total of guessed cards over the three rounds wins."
+  },
+
+  "symbol": "hourglass",
+  "paletteID": "cyan",
+
+  "players": { "min": 4, "max": 12, "recommended": [6, 8] },
+
+  "scoring": {
+    "direction": "highestWins",
+    "aggregation": "cumulative",
+    "roundLabel": { "fr": "Manche", "en": "Round" },
+    "entry": {
+      "kind": "integer",
+      "min": 0,
+      "allowsNegative": false
+    },
+    "modifiers": []
+  },
+
+  "engine": "generic.sum.v1",
+
+  "end": {
+    "conditions": [
+      {
+        "type": "roundLimit",
+        "value": 3,
+        "comparison": ">=",
+        "scope": "allPlayers",
+        "completeRound": true
+      }
+    ]
+  },
+
+  "tieBreak": ["shared"],
+
+  "statsProfiles": ["standard"]
+}

@@ -1,0 +1,105 @@
+{
+  "goldenId": "molkky-01-depassement-et-victoire",
+  "description": "Partie à 2 joueurs illustrant les deux règles propres à Mölkky. Manche 4 : Alice, à 48, lance un 8 — 48+8=56 dépasse 50, son score retombe à 25 (et non 56). Au même moment, Bob, à 40, lance un 10 et atteint exactement 50 : la partie s'arrête immédiatement (`targetReached`), sans « dernier tour ».",
+  "gameId": "molkky",
+  "rulesVersion": 1,
+
+  "variants": {},
+
+  "participants": [
+    { "id": "p1", "name": "Alice", "seatIndex": 0 },
+    { "id": "p2", "name": "Bob", "seatIndex": 1 }
+  ],
+
+  "rounds": [
+    {
+      "index": 0,
+      "inputs": [
+        { "participant": "p1", "rawValue": 12, "modifiers": [] },
+        { "participant": "p2", "rawValue": 10, "modifiers": [] }
+      ]
+    },
+    {
+      "index": 1,
+      "inputs": [
+        { "participant": "p1", "rawValue": 12, "modifiers": [] },
+        { "participant": "p2", "rawValue": 10, "modifiers": [] }
+      ]
+    },
+    {
+      "index": 2,
+      "inputs": [
+        { "participant": "p1", "rawValue": 12, "modifiers": [] },
+        { "participant": "p2", "rawValue": 10, "modifiers": [] }
+      ]
+    },
+    {
+      "index": 3,
+      "inputs": [
+        { "participant": "p1", "rawValue": 12, "modifiers": [] },
+        { "participant": "p2", "rawValue": 10, "modifiers": [] }
+      ]
+    },
+    {
+      "index": 4,
+      "inputs": [
+        { "participant": "p1", "rawValue": 8, "modifiers": [] },
+        { "participant": "p2", "rawValue": 10, "modifiers": [] }
+      ]
+    }
+  ],
+
+  "expected": {
+    "roundResults": [
+      {
+        "index": 0,
+        "computed": { "p1": 12, "p2": 10 },
+        "cumulative": { "p1": 12, "p2": 10 },
+        "doubled": [],
+        "status": "inProgress"
+      },
+      {
+        "index": 1,
+        "computed": { "p1": 12, "p2": 10 },
+        "cumulative": { "p1": 24, "p2": 20 },
+        "doubled": [],
+        "status": "inProgress"
+      },
+      {
+        "index": 2,
+        "computed": { "p1": 12, "p2": 10 },
+        "cumulative": { "p1": 36, "p2": 30 },
+        "doubled": [],
+        "status": "inProgress"
+      },
+      {
+        "index": 3,
+        "computed": { "p1": 12, "p2": 10 },
+        "cumulative": { "p1": 48, "p2": 40 },
+        "doubled": [],
+        "status": "inProgress"
+      },
+      {
+        "index": 4,
+        "comment": "Alice : 48+8=56 > 50, retour à 25 (computedValue = 25-48 = -23). Bob : 40+10=50 exactement, la partie s'arrête aussitôt.",
+        "computed": { "p1": -23, "p2": 10 },
+        "cumulative": { "p1": 25, "p2": 50 },
+        "doubled": ["p1"],
+        "status": "ended"
+      }
+    ],
+
+    "final": {
+      "status": "ended",
+      "reason": "targetReached",
+      "standings": [
+        { "participant": "p2", "rank": 1, "score": 50 },
+        { "participant": "p1", "rank": 2, "score": 25 }
+      ]
+    },
+
+    "insights": [
+      { "id": "finalGap", "value": 25 }
+    ]
+  }
+}

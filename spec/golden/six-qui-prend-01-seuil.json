@@ -1,0 +1,82 @@
+{
+  "goldenId": "six-qui-prend-01-seuil",
+  "description": "Partie nominale à 3 joueurs, aucune égalité. Alice franchit exactement 66 (limite >=) à la manche 2, ce qui arrête la partie ; Chloé, la plus basse, gagne.",
+  "gameId": "six-qui-prend",
+  "rulesVersion": 1,
+
+  "variants": {},
+
+  "participants": [
+    { "id": "p1", "name": "Alice", "seatIndex": 0 },
+    { "id": "p2", "name": "Bob", "seatIndex": 1 },
+    { "id": "p3", "name": "Chloé", "seatIndex": 2 }
+  ],
+
+  "rounds": [
+    {
+      "index": 0,
+      "inputs": [
+        { "participant": "p1", "rawValue": 20, "modifiers": [] },
+        { "participant": "p2", "rawValue": 10, "modifiers": [] },
+        { "participant": "p3", "rawValue": 5, "modifiers": [] }
+      ]
+    },
+    {
+      "index": 1,
+      "inputs": [
+        { "participant": "p1", "rawValue": 20, "modifiers": [] },
+        { "participant": "p2", "rawValue": 15, "modifiers": [] },
+        { "participant": "p3", "rawValue": 15, "modifiers": [] }
+      ]
+    },
+    {
+      "index": 2,
+      "inputs": [
+        { "participant": "p1", "rawValue": 26, "modifiers": [] },
+        { "participant": "p2", "rawValue": 12, "modifiers": [] },
+        { "participant": "p3", "rawValue": 12, "modifiers": [] }
+      ]
+    }
+  ],
+
+  "expected": {
+    "roundResults": [
+      {
+        "index": 0,
+        "computed": { "p1": 20, "p2": 10, "p3": 5 },
+        "cumulative": { "p1": 20, "p2": 10, "p3": 5 },
+        "doubled": [],
+        "status": "inProgress"
+      },
+      {
+        "index": 1,
+        "computed": { "p1": 20, "p2": 15, "p3": 15 },
+        "cumulative": { "p1": 40, "p2": 25, "p3": 20 },
+        "doubled": [],
+        "status": "inProgress"
+      },
+      {
+        "index": 2,
+        "comment": "Alice atteint exactement 66 : la comparaison >= déclenche la fin sur l'égalité stricte.",
+        "computed": { "p1": 26, "p2": 12, "p3": 12 },
+        "cumulative": { "p1": 66, "p2": 37, "p3": 32 },
+        "doubled": [],
+        "status": "ended"
+      }
+    ],
+
+    "final": {
+      "status": "ended",
+      "reason": "scoreThreshold",
+      "standings": [
+        { "participant": "p3", "rank": 1, "score": 32 },
+        { "participant": "p2", "rank": 2, "score": 37 },
+        { "participant": "p1", "rank": 3, "score": 66 }
+      ]
+    },
+
+    "insights": [
+      { "id": "finalGap", "value": 5 }
+    ]
+  }
+}

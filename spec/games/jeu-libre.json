@@ -1,0 +1,42 @@
+{
+  "id": "jeu-libre",
+  "specVersion": 1,
+  "rulesVersion": 1,
+
+  "name": { "fr": "Jeu libre", "en": "Free scoring" },
+  "shortDescription": {
+    "fr": "Un tableau de scores pour n'importe quel jeu. Le score le plus haut gagne ; c'est toi qui décides quand la partie se termine.",
+    "en": "A scoreboard for any game. Highest score wins; you decide when the game ends."
+  },
+
+  "symbol": "square.and.pencil",
+  "paletteID": "ardoise",
+
+  "players": { "min": 1, "max": 12, "recommended": [2, 3, 4] },
+
+  "scoring": {
+    "direction": "highestWins",
+    "aggregation": "cumulative",
+    "roundLabel": { "fr": "Manche", "en": "Round" },
+    "entry": {
+      "kind": "integer",
+      "allowsNegative": true
+    },
+    "modifiers": []
+  },
+
+  "engine": "generic.sum.v1",
+
+  "end": {
+    "conditions": [
+      {
+        "type": "manualStop",
+        "scope": "anyPlayer"
+      }
+    ]
+  },
+
+  "tieBreak": ["shared"],
+
+  "statsProfiles": ["standard"]
+}

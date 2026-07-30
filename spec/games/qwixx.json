@@ -1,0 +1,43 @@
+{
+  "id": "qwixx",
+  "specVersion": 1,
+  "rulesVersion": 1,
+
+  "name": { "fr": "Qwixx", "en": "Qwixx" },
+  "shortDescription": {
+    "fr": "Une seule feuille par joueur, remplie au fil de la partie. Entrez le score final lu sur votre grille (barème triangulaire imprimé dessus) ; le plus haut gagne.",
+    "en": "One sheet per player, filled in over the course of the game. Enter the final score read off your sheet (the triangular table is printed on it); highest wins."
+  },
+
+  "symbol": "number.square.fill",
+  "paletteID": "teal",
+
+  "players": { "min": 2, "max": 5, "recommended": [3, 4, 5] },
+
+  "scoring": {
+    "direction": "highestWins",
+    "aggregation": "cumulative",
+    "roundLabel": { "fr": "Partie", "en": "Game" },
+    "entry": {
+      "kind": "integer",
+      "min": 0,
+      "allowsNegative": false
+    },
+    "modifiers": []
+  },
+
+  "engine": "generic.sum.v1",
+
+  "end": {
+    "conditions": [
+      {
+        "type": "manualStop",
+        "scope": "anyPlayer"
+      }
+    ]
+  },
+
+  "tieBreak": ["shared"],
+
+  "statsProfiles": ["standard"]
+}
