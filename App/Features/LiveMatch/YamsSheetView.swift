@@ -9,6 +9,7 @@ struct YamsSheetView: View {
     @State private var model: YamsSheetModel
     @State private var pendingEntry: PendingEntry?
     @State private var isConfirmingAbandon = false
+    @State private var isPresentingRoundHistory = false
 
     init(match: MatchRecord, context: ModelContext, catalog: GameCatalog) {
         _model = State(initialValue: try! YamsSheetModel(match: match, context: context, catalog: catalog))
@@ -47,8 +48,18 @@ struct YamsSheetView: View {
                                 isConfirmingAbandon = true
                             }
                         }
+                        ToolbarItem(placement: .primaryAction) {
+                            Button {
+                                isPresentingRoundHistory = true
+                            } label: {
+                                Label("Voir les manches", systemImage: "list.bullet")
+                            }
+                        }
                     }
             }
+        }
+        .sheet(isPresented: $isPresentingRoundHistory) {
+            RoundHistoryView(state: model.state, definition: model.definition)
         }
         .sheet(item: $pendingEntry) { pending in
             YamsCategoryEntrySheet(participant: pending.participant, category: pending.category) { rawValue in

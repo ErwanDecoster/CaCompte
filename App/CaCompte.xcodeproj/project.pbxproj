@@ -23,6 +23,7 @@
 		4A2C78824B135828FE2E5FC6 /* QRScannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E465C66E83BEDE023DDBDBFB /* QRScannerView.swift */; };
 		4A56CC9B8C9F6878EB95DC28 /* HistoryListModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 849F62578BC9685EEC910AC8 /* HistoryListModel.swift */; };
 		509242CF2FF4DB88D1125A94 /* Domain in Frameworks */ = {isa = PBXBuildFile; productRef = 52A42D4B0C5C94DF1D08F8CD /* Domain */; };
+		52E4F168D3F9659FD5DA76CE /* RoundHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B18BE4332F79E7E4167B768D /* RoundHistoryView.swift */; };
 		5F0AAA9466CE0936F3BAA6B1 /* QRCodeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D90C5383931C73460C54F4F3 /* QRCodeView.swift */; };
 		60FC842FC3B1BA12ED6EC82B /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4DC2275071173C4FD737F895 /* SettingsView.swift */; };
 		6389CCBC2E955F0259E97312 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 9BB59FBD1B31E852B0902041 /* Assets.xcassets */; };
@@ -121,6 +122,7 @@
 		ACC2C52B613E48E0F72A930D /* WiFiAvailability.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WiFiAvailability.swift; sourceTree = "<group>"; };
 		ACECD00F003F1196DA804A2D /* ArchivedPlayersView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArchivedPlayersView.swift; sourceTree = "<group>"; };
 		B027CF6BA8617B3C6DF58619 /* CaCompte.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CaCompte.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B18BE4332F79E7E4167B768D /* RoundHistoryView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RoundHistoryView.swift; sourceTree = "<group>"; };
 		BADA2645FCD7DF45BDBEF1A4 /* YamsSheetModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YamsSheetModel.swift; sourceTree = "<group>"; };
 		BCA00ECB7595F62002FC421C /* MatchLiveActivityWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MatchLiveActivityWidget.swift; sourceTree = "<group>"; };
 		C15C1F1E2E5C224E80E4373A /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -295,6 +297,7 @@
 				ED88C4CDA8CFDA746AC9588D /* SharedMatchModel.swift */,
 				4A9F5EDAC041F9E23EED5B5D /* SharedMatchView.swift */,
 				D90C5383931C73460C54F4F3 /* QRCodeView.swift */,
+				B18BE4332F79E7E4167B768D /* RoundHistoryView.swift */,
 			);
 			path = LiveMatch;
 			sourceTree = "<group>";
@@ -490,6 +493,7 @@
 				5F0AAA9466CE0936F3BAA6B1 /* QRCodeView.swift in Sources */,
 				4A2C78824B135828FE2E5FC6 /* QRScannerView.swift in Sources */,
 				ED9802FF72A9AD579FC068EF /* MatchLiveActivityController.swift in Sources */,
+				52E4F168D3F9659FD5DA76CE /* RoundHistoryView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

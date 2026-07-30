@@ -8,6 +8,7 @@ import SwiftUI
 struct BeloteRoundView: View {
     @State private var model: BeloteRoundModel
     @State private var isConfirmingAbandon = false
+    @State private var isPresentingRoundHistory = false
 
     init(match: MatchRecord, context: ModelContext, catalog: GameCatalog) {
         _model = State(initialValue: try! BeloteRoundModel(match: match, context: context, catalog: catalog))
@@ -74,8 +75,18 @@ struct BeloteRoundView: View {
                             isConfirmingAbandon = true
                         }
                     }
+                    ToolbarItem(placement: .primaryAction) {
+                        Button {
+                            isPresentingRoundHistory = true
+                        } label: {
+                            Label("Voir les manches", systemImage: "list.bullet")
+                        }
+                    }
                 }
             }
+        }
+        .sheet(isPresented: $isPresentingRoundHistory) {
+            RoundHistoryView(state: model.state, definition: model.definition)
         }
         .alert(
             "Saisie invalide",

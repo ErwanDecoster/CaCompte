@@ -12,6 +12,7 @@ struct LiveMatchView: View {
     @State private var isConfirmingManualEnd = false
     @State private var isConfirmingAbandon = false
     @State private var isPresentingShareSession = false
+    @State private var isPresentingRoundHistory = false
 
     init(match: MatchRecord, context: ModelContext, catalog: GameCatalog) {
         _model = State(initialValue: try! LiveMatchModel(match: match, context: context, catalog: catalog))
@@ -38,10 +39,14 @@ struct LiveMatchView: View {
         List {
             if model.requiresCloserSelection {
                 Section {
-                    Picker("A fermé la manche", selection: closerBinding) {
-                        Text("—").tag(Participant.ID?.none)
-                        ForEach(model.participants) { participant in
-                            Text(participant.displayName).tag(Optional(participant.id))
+                    Text("A fermé la manche").font(.label).foregroundStyle(.textSecondary)
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: Space.sm) {
+                            ForEach(model.participants) { participant in
+                                Chip(LocalizedStringResource(stringLiteral: participant.displayName), isSelected: model.closedParticipantID == participant.id) {
+                                    model.closedParticipantID = participant.id
+                                }
+                            }
                         }
                     }
                 }
@@ -91,6 +96,11 @@ struct LiveMatchView: View {
                             systemImage: model.isSharing ? "wifi" : "wifi.circle"
                         )
                     }
+                    Button {
+                        isPresentingRoundHistory = true
+                    } label: {
+                        Label("Voir les manches", systemImage: "list.bullet")
+                    }
                     if model.canEndManually {
                         Button("Terminer la partie") {
                             isConfirmingManualEnd = true
@@ -116,6 +126,20 @@ struct LiveMatchView: View {
                     advance()
                 }
             }
+        }
+        // Doc utilisateur — la barre d'accessoires du clavier (juste au-dessus) disparaît avec
+        // lui : sur iPad notamment, le bouton natif de fermeture du clavier laissait l'écran sans
+        // aucun moyen de valider la manche en cours (bug remonté). Ce bouton reste visible que le
+        // clavier soit affiché ou non.
+        .safeAreaInset(edge: .bottom) {
+            Button(model.actionLabelTitle) {
+                advance()
+            }
+            .buttonStyle(.primary(size: .medium))
+            .frame(maxWidth: .infinity)
+            .padding(.horizontal, Space.lg)
+            .padding(.vertical, Space.sm)
+            .background(.bar)
         }
         .onAppear {
             focusedParticipantID = model.currentParticipant?.id
@@ -149,17 +173,27 @@ struct LiveMatchView: View {
         .sheet(isPresented: $isPresentingShareSession) {
             ShareSessionView(model: model)
         }
+        .sheet(isPresented: $isPresentingRoundHistory) {
+            RoundHistoryView(state: model.state, definition: model.definition)
+        }
         // Doc utilisateur — sans ça, la manche d'un contributeur distant se contente de faire
         // monter les totaux (déjà animés juste au-dessus) sans qu'on comprenne pourquoi. Le
-        // bandeau nomme l'appareil, le retour haptique attire l'œil même sans le regarder.
+        // bandeau nomme l'appareil, le retour haptique attire l'œil même sans le regarder. Même
+        // bandeau pour l'explication d'un score modifié par une règle (doublement Skyjo…).
         .overlay(alignment: .top) {
-            if let message = model.remoteActivityMessage {
-                Banner(LocalizedStringResource(stringLiteral: message))
-                    .padding(.top, Space.sm)
-                    .transition(.move(edge: .top).combined(with: .opacity))
+            VStack(spacing: Space.sm) {
+                if let message = model.roundExplanationMessage {
+                    Banner(LocalizedStringResource(stringLiteral: message))
+                }
+                if let message = model.remoteActivityMessage {
+                    Banner(LocalizedStringResource(stringLiteral: message))
+                }
             }
+            .padding(.top, Space.sm)
+            .transition(.move(edge: .top).combined(with: .opacity))
         }
         .animation(.default, value: model.remoteActivityMessage)
+        .animation(.default, value: model.roundExplanationMessage)
         .sensoryFeedback(.success, trigger: model.remoteActivityMessage) { oldValue, newValue in
             newValue != nil
         }
@@ -182,13 +216,6 @@ struct LiveMatchView: View {
                     .strokeBorder(.brandInk, lineWidth: focusedParticipantID == participant.id ? 2 : 0)
             }
             .focused($focusedParticipantID, equals: participant.id)
-    }
-
-    private var closerBinding: Binding<Participant.ID?> {
-        Binding(
-            get: { model.closedParticipantID },
-            set: { model.closedParticipantID = $0 }
-        )
     }
 
     private func textBinding(for participantID: Participant.ID) -> Binding<String> {

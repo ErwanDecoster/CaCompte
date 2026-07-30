@@ -42,6 +42,12 @@ final class LiveMatchModel {
     private(set) var remoteActivityMessage: String?
     private var remoteActivityClearTask: Task<Void, Never>?
 
+    /// Doc utilisateur — un score modifié par une règle (doublement Skyjo, bonus…) se contente
+    /// autrement de changer silencieusement dans le total : la manche vient d'être validée, c'est
+    /// le seul moment où l'explication (`ScoreEntry.explanation`) a une chance d'être vue.
+    private(set) var roundExplanationMessage: String?
+    private var roundExplanationClearTask: Task<Void, Never>?
+
     var isSharing: Bool { session != nil }
 
     init(match: MatchRecord, context: ModelContext, catalog: GameCatalog) throws {
@@ -156,8 +162,21 @@ final class LiveMatchModel {
         closedParticipantID = nil
         activeSeatIndex = 0
         validationErrorMessage = nil
+        if let explanation = state.rounds.last?.entries.compactMap(\.explanation).first {
+            showRoundExplanation(explanation)
+        }
         syncSharedLogIfNeeded()
         return true
+    }
+
+    private func showRoundExplanation(_ message: String) {
+        roundExplanationMessage = message
+        roundExplanationClearTask?.cancel()
+        roundExplanationClearTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(4))
+            guard !Task.isCancelled else { return }
+            self?.roundExplanationMessage = nil
+        }
     }
 
     func undoLastRound() {
@@ -171,10 +190,10 @@ final class LiveMatchModel {
     /// d'appairage à 6 chiffres, arbitre les propositions des contributeurs distants
     /// (`LiveSession`). `deviceName` vient de l'appelant (`UIDevice.current.name`) — ni `Sync`
     /// ni `CaCompteKit` ne peuvent lire `UIDevice` (la cible compile aussi pour macOS).
-    func startSharing(deviceName: String) async throws {
+    func startSharing(deviceName: String, allowsContributors: Bool = true) async throws {
         let newSession = LiveSession(deviceID: DeviceIdentity.current, catalog: catalog)
         let code = LiveSession.generatePairingCode()
-        try await newSession.startHosting(log: repository.currentLog(for: match), pairingCode: code)
+        try await newSession.startHosting(log: repository.currentLog(for: match), pairingCode: code, allowsContributors: allowsContributors)
 
         let newTransport = WifiTransport(deviceName: deviceName)
         try await newTransport.advertise(matchID: state.matchID, gameID: match.gameID, participantCount: participants.count)
@@ -204,6 +223,12 @@ final class LiveMatchModel {
             }
         }
         sharingTasks = [acceptTask, eventsTask, peersTask]
+    }
+
+    /// Doc utilisateur P9 — s'applique aux prochaines connexions, pas aux contributeurs déjà
+    /// connectés (voir `LiveSession.setAllowsContributors`).
+    func setAllowsContributors(_ allowed: Bool) async {
+        await session?.setAllowsContributors(allowed)
     }
 
     func stopSharing() async {

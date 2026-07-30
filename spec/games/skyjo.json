@@ -58,7 +58,7 @@
       "id": "threshold",
       "label": { "fr": "Fin de partie à", "en": "Game ends at" },
       "kind": "integerChoice",
-      "values": [100, 150, 200],
+      "values": [50, 100, 150, 200],
       "default": 100
     },
     {
