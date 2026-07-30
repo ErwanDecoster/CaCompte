@@ -7,10 +7,20 @@ import SwiftData
 @MainActor
 @Observable
 final class HistoryListModel {
+    /// Doc utilisateur — identifie une entrée du filtre joueur. `.player(UUID)` pour une fiche
+    /// encore existante (stable même si elle est renommée) ; `.deletedPlayer(nickname:)` pour un
+    /// participant dont la fiche a été supprimée — regroupé par pseudo plutôt que par id de
+    /// participation, sinon la même personne supprimée apparaît une fois par partie jouée
+    /// (doublons remontés en recette).
+    enum PlayerFilterID: Hashable {
+        case player(UUID)
+        case deletedPlayer(nickname: String)
+    }
+
     private(set) var matches: [MatchRecord] = []
     private(set) var archivedCount: Int = 0
     var selectedGameID: String?
-    var selectedPlayerID: UUID?
+    var selectedPlayerID: PlayerFilterID?
 
     let catalog: GameCatalog
     private let repository: MatchRepository
@@ -51,12 +61,12 @@ final class HistoryListModel {
     /// La suppression d'une fiche joueur annule `participant.player` (règle `.nullify`, doc 03) mais
     /// garde `nicknameSnapshot` — les parties passées restent dans l'historique. Le filtre doit donc
     /// lister les joueurs tels qu'ils apparaissent dans les parties, pas la liste des fiches encore
-    /// existantes : on retombe sur l'id du participant quand la fiche a été supprimée.
-    var availablePlayers: [(id: UUID, name: String)] {
-        var byID: [UUID: String] = [:]
+    /// existantes : on retombe sur le pseudo quand la fiche a été supprimée.
+    var availablePlayers: [(id: PlayerFilterID, name: String)] {
+        var byID: [PlayerFilterID: String] = [:]
         for match in matches {
             for participant in match.participants {
-                byID[participant.player?.id ?? participant.id] = participant.nicknameSnapshot
+                byID[filterID(for: participant)] = participant.nicknameSnapshot
             }
         }
         return byID.map { (id: $0.key, name: $0.value) }.sorted { $0.name < $1.name }
@@ -65,10 +75,12 @@ final class HistoryListModel {
     var filteredMatches: [MatchRecord] {
         matches.filter { match in
             (selectedGameID == nil || match.gameID == selectedGameID)
-                && (selectedPlayerID == nil || match.participants.contains {
-                    ($0.player?.id ?? $0.id) == selectedPlayerID
-                })
+                && (selectedPlayerID == nil || match.participants.contains { filterID(for: $0) == selectedPlayerID })
         }
+    }
+
+    private func filterID(for participant: ParticipantRecord) -> PlayerFilterID {
+        participant.player.map { .player($0.id) } ?? .deletedPlayer(nickname: participant.nicknameSnapshot)
     }
 
     func gameName(for match: MatchRecord) -> String {

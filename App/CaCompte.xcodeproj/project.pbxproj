@@ -12,6 +12,7 @@
 		163489A6E89B817A87D107A0 /* MatchPlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25AA1BD3EAD4A3DC5B516CC7 /* MatchPlayView.swift */; };
 		188202D3EB10D2CD01A3BC5C /* CaCompteWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C2581102A3F3BC41B60D067 /* CaCompteWidgetBundle.swift */; };
 		1A4A5AF525AF7E3744290706 /* ParticipantRecord+Avatar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 437E55AE4133903D59398F69 /* ParticipantRecord+Avatar.swift */; };
+		1C0AC5F7DB9C7CCDF5852C46 /* KeyboardObserver.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4069F1BD7B30DB92C9BF1AB /* KeyboardObserver.swift */; };
 		227E4860995218D9A9105300 /* GamesTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EFB7CD056077D671ED76AF9 /* GamesTabView.swift */; };
 		22A26A3D66FC3BDB4954FE9F /* MatchLiveActivityWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = BCA00ECB7595F62002FC421C /* MatchLiveActivityWidget.swift */; };
 		23BC6769A3DEA226BAAC6BA9 /* MatchSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F22BB7F6F50FBAC4AD75FF39 /* MatchSetupView.swift */; };
@@ -123,6 +124,7 @@
 		ACECD00F003F1196DA804A2D /* ArchivedPlayersView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArchivedPlayersView.swift; sourceTree = "<group>"; };
 		B027CF6BA8617B3C6DF58619 /* CaCompte.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CaCompte.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B18BE4332F79E7E4167B768D /* RoundHistoryView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RoundHistoryView.swift; sourceTree = "<group>"; };
+		B4069F1BD7B30DB92C9BF1AB /* KeyboardObserver.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = KeyboardObserver.swift; sourceTree = "<group>"; };
 		BADA2645FCD7DF45BDBEF1A4 /* YamsSheetModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YamsSheetModel.swift; sourceTree = "<group>"; };
 		BCA00ECB7595F62002FC421C /* MatchLiveActivityWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MatchLiveActivityWidget.swift; sourceTree = "<group>"; };
 		C15C1F1E2E5C224E80E4373A /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -271,6 +273,7 @@
 				D6A7FA038D13457691C09E07 /* MatchShortcuts.swift */,
 				528F4F1174DBC240F83F45EB /* CaCompteWidget */,
 				08AE0320DC761E1775EBBD52 /* MatchLiveActivityController.swift */,
+				B4069F1BD7B30DB92C9BF1AB /* KeyboardObserver.swift */,
 			);
 			name = "";
 			sourceTree = "<group>";
@@ -494,6 +497,7 @@
 				4A2C78824B135828FE2E5FC6 /* QRScannerView.swift in Sources */,
 				ED9802FF72A9AD579FC068EF /* MatchLiveActivityController.swift in Sources */,
 				52E4F168D3F9659FD5DA76CE /* RoundHistoryView.swift in Sources */,
+				1C0AC5F7DB9C7CCDF5852C46 /* KeyboardObserver.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -13,6 +13,10 @@ struct MatchLiveActivityWidget: Widget {
                 .activityBackgroundTint(.black.opacity(0.4))
                 .widgetURL(URL(string: "cacompte://resume"))
         } dynamicIsland: { context in
+            // Doc utilisateur — remontée : le contenu de la région `.bottom` touchait les bords
+            // arrondis de l'île, qui le rognaient visuellement. Une marge horizontale (et un peu
+            // de haut) est indispensable ici — contrairement à `.leading`/`.trailing`, l'île
+            // n'en ajoute pas toute seule pour cette région.
             DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
                     Label(context.attributes.gameName, systemImage: context.attributes.gameSymbol)
@@ -26,6 +30,8 @@ struct MatchLiveActivityWidget: Widget {
                 }
                 DynamicIslandExpandedRegion(.bottom) {
                     MatchStandingsRows(standings: context.state.standings)
+                        .padding(.horizontal, 8)
+                        .padding(.top, 4)
                 }
             } compactLeading: {
                 Image(systemName: context.attributes.gameSymbol)

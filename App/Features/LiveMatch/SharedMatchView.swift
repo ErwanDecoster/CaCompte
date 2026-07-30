@@ -19,6 +19,7 @@ struct SharedMatchView: View {
     @FocusState private var focusedParticipantID: Participant.ID?
     @State private var activeIndex = 0
     @State private var isPresentingRoundHistory = false
+    @State private var keyboardObserver = KeyboardObserver()
 
     var body: some View {
         Group {
@@ -133,9 +134,10 @@ struct SharedMatchView: View {
             }
         }
         // Doc utilisateur — même bug que `LiveMatchView` : la barre d'accessoires du clavier
-        // disparaît avec lui, laissant l'écran sans moyen de valider la manche.
+        // disparaît avec lui, laissant l'écran sans moyen de valider la manche. Masqué quand le
+        // clavier est visible pour ne pas doublonner son propre bouton « Suivant/Envoyer ».
         .safeAreaInset(edge: .bottom) {
-            if model.canPropose {
+            if model.canPropose, !keyboardObserver.isVisible {
                 Button(isLastField ? "Envoyer" : "Suivant") {
                     advanceFocus()
                 }
@@ -146,13 +148,16 @@ struct SharedMatchView: View {
                 .background(.bar)
             }
         }
+        .animation(.default, value: keyboardObserver.isVisible)
         .sheet(isPresented: $isPresentingRoundHistory) {
             RoundHistoryView(state: state, definition: definition)
         }
         .overlay(alignment: .top) {
             if let message = model.roundExplanationMessage {
                 Banner(LocalizedStringResource(stringLiteral: message))
+                    .padding(.horizontal, Space.lg)
                     .padding(.top, Space.sm)
+                    .frame(maxWidth: .infinity)
                     .transition(.move(edge: .top).combined(with: .opacity))
             }
         }

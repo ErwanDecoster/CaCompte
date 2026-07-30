@@ -13,6 +13,7 @@ struct LiveMatchView: View {
     @State private var isConfirmingAbandon = false
     @State private var isPresentingShareSession = false
     @State private var isPresentingRoundHistory = false
+    @State private var keyboardObserver = KeyboardObserver()
 
     init(match: MatchRecord, context: ModelContext, catalog: GameCatalog) {
         _model = State(initialValue: try! LiveMatchModel(match: match, context: context, catalog: catalog))
@@ -129,18 +130,22 @@ struct LiveMatchView: View {
         }
         // Doc utilisateur — la barre d'accessoires du clavier (juste au-dessus) disparaît avec
         // lui : sur iPad notamment, le bouton natif de fermeture du clavier laissait l'écran sans
-        // aucun moyen de valider la manche en cours (bug remonté). Ce bouton reste visible que le
-        // clavier soit affiché ou non.
+        // aucun moyen de valider la manche en cours (bug remonté). Ce bouton prend le relais,
+        // mais uniquement quand le clavier est masqué — sinon il doublonne le « Suivant » déjà
+        // présent juste au-dessus (remontée utilisateur).
         .safeAreaInset(edge: .bottom) {
-            Button(model.actionLabelTitle) {
-                advance()
+            if !keyboardObserver.isVisible {
+                Button(model.actionLabelTitle) {
+                    advance()
+                }
+                .buttonStyle(.primary(size: .medium))
+                .frame(maxWidth: .infinity)
+                .padding(.horizontal, Space.lg)
+                .padding(.vertical, Space.sm)
+                .background(.bar)
             }
-            .buttonStyle(.primary(size: .medium))
-            .frame(maxWidth: .infinity)
-            .padding(.horizontal, Space.lg)
-            .padding(.vertical, Space.sm)
-            .background(.bar)
         }
+        .animation(.default, value: keyboardObserver.isVisible)
         .onAppear {
             focusedParticipantID = model.currentParticipant?.id
         }
@@ -189,7 +194,9 @@ struct LiveMatchView: View {
                     Banner(LocalizedStringResource(stringLiteral: message))
                 }
             }
+            .padding(.horizontal, Space.lg)
             .padding(.top, Space.sm)
+            .frame(maxWidth: .infinity)
             .transition(.move(edge: .top).combined(with: .opacity))
         }
         .animation(.default, value: model.remoteActivityMessage)

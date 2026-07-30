@@ -24,6 +24,7 @@ public struct SkyjoRulesV1: GameRules {
     public func score(_ draft: RoundDraft, in state: MatchState, definition: GameDefinition) -> [ScoreEntry] {
         let doublingEnabled = state.variants.bool("doublePenalty", default: true)
         let lowest = draft.inputs.map(\.rawValue).min() ?? 0
+        let names = Dictionary(uniqueKeysWithValues: state.participants.map { ($0.id, $0.displayName) })
 
         return draft.inputs.map { input in
             let closed = input.modifiers.contains(.closedRound)
@@ -36,7 +37,7 @@ public struct SkyjoRulesV1: GameRules {
                 rawValue: input.rawValue,
                 computedValue: penalised ? input.rawValue * 2 : input.rawValue,
                 explanation: penalised
-                    ? "Score doublé : a fermé la manche sans le score le plus bas."
+                    ? "Score doublé : \(names[input.participantID] ?? "ce joueur") a fermé la manche sans le score le plus bas."
                     : nil,
                 detail: nil,
                 modifiers: input.modifiers
