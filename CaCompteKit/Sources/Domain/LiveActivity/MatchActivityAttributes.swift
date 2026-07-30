@@ -13,6 +13,11 @@ public struct MatchActivityAttributes: ActivityAttributes {
     public struct ContentState: Codable, Hashable, Sendable {
         public let roundNumber: Int
         public let standings: [Standing]
+        /// Doc utilisateur — remontée : côté pair, la connexion à l'hôte peut tomber (app en
+        /// arrière-plan…) sans que la partie soit terminée ; l'affichage se figeait alors sur le
+        /// dernier score reçu sans le dire. `true` signale que ce n'est plus mis à jour, plutôt
+        /// que de laisser croire à un score en direct qui ne l'est plus.
+        public let isStale: Bool
 
         public struct Standing: Codable, Hashable, Sendable, Identifiable {
             public let id: UUID
@@ -26,9 +31,10 @@ public struct MatchActivityAttributes: ActivityAttributes {
             }
         }
 
-        public init(roundNumber: Int, standings: [Standing]) {
+        public init(roundNumber: Int, standings: [Standing], isStale: Bool = false) {
             self.roundNumber = roundNumber
             self.standings = standings
+            self.isStale = isStale
         }
     }
 

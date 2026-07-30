@@ -63,6 +63,11 @@ final class SharedMatchModel {
         let hostLeftTask = Task { [weak self] in
             for await _ in session.hostLeft {
                 self?.isHostConnected = false
+                // Doc utilisateur — remontée : l'écran verrouillé continuait d'afficher le
+                // dernier score reçu sans rien signaler, comme s'il était toujours à jour.
+                if let matchID = self?.state?.matchID {
+                    MatchLiveActivityController.markStale(matchID: matchID)
+                }
             }
         }
         tasks = [eventsTask, rejectionsTask, hostLeftTask]

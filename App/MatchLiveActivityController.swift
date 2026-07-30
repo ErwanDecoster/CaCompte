@@ -33,9 +33,13 @@ enum MatchLiveActivityController {
             // `update`/`end` sont `nonisolated async` — `nonisolated(unsafe)` est l'échappatoire
             // documentée pour ce décalage précis, pas un contournement maison.
             if hasEnded {
+                // Doc utilisateur — remontée : `.default` gardait la carte affichée un moment
+                // après la fin de partie (comportement voulu au départ, « voir le score final »),
+                // mais ça se lisait comme un bug (« la partie est finie, pourquoi c'est encore
+                // là ? »). Retrait immédiat, comme `stopTracking` ci-dessous.
                 guard let found = activities.removeValue(forKey: matchID) else { return }
                 nonisolated(unsafe) let activity = found
-                await activity.end(ActivityContent(state: content, staleDate: nil), dismissalPolicy: .default)
+                await activity.end(ActivityContent(state: content, staleDate: nil), dismissalPolicy: .immediate)
                 return
             }
 
@@ -53,14 +57,33 @@ enum MatchLiveActivityController {
     }
 
     /// Doc utilisateur — un pair qui quitte une partie partagée sans qu'elle soit terminée (P9,
-    /// remontée utilisateur) : contrairement à une vraie fin de partie (`refresh` ci-dessus,
-    /// `dismissalPolicy: .default` pour laisser voir le score final un moment), rien ne justifie
-    /// de garder la carte sur l'écran verrouillé une fois qu'on a explicitement arrêté de suivre.
+    /// remontée utilisateur) : retrait immédiat, même logique que la fin de partie ci-dessus.
     static func stopTracking(matchID: UUID) {
         Task { @MainActor in
             guard let found = activities.removeValue(forKey: matchID) else { return }
             nonisolated(unsafe) let activity = found
             await activity.end(nil, dismissalPolicy: .immediate)
+        }
+    }
+
+    /// Doc utilisateur — remontée : l'app en arrière-plan coupe la connexion Wi-Fi côté pair (pas
+    /// d'entitlement réseau en tâche de fond, doc `JoinMatchView`) ; sans rien faire, l'écran
+    /// verrouillé continuait d'afficher le dernier score reçu comme s'il était toujours en direct.
+    /// Republie le même contenu marqué `isStale`, plutôt que de le deviner depuis `staleDate` seul
+    /// (peu visible pour du contenu statique) — `refresh` efface le marqueur de lui-même dès que
+    /// de nouveaux événements arrivent (reconnexion réussie).
+    static func markStale(matchID: UUID) {
+        Task { @MainActor in
+            guard let found = activities[matchID] else { return }
+            nonisolated(unsafe) let activity = found
+            let current = activity.content.state
+            guard !current.isStale else { return }
+            let staleContent = MatchActivityAttributes.ContentState(
+                roundNumber: current.roundNumber,
+                standings: current.standings,
+                isStale: true
+            )
+            await activity.update(ActivityContent(state: staleContent, staleDate: .now))
         }
     }
 }
