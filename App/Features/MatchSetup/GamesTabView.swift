@@ -133,42 +133,21 @@ struct GamesTabView: View {
             // Doc utilisateur — un lien `cacompte://` ouvert depuis l'appareil photo système
             // arrive ici, potentiellement alors qu'on est sur un autre onglet ou déjà dans un
             // autre écran ; `DeepLinkRouter` fait le pont depuis `.onOpenURL` (CaCompteApp).
-            .onChange(of: deepLinkRouter.pendingJoin) { _, newValue in
-                guard let newValue else { return }
-                joinPayloadForSheet = newValue
-                deepLinkRouter.pendingJoin = nil
-                isPresentingJoin = true
-            }
-            // Doc utilisateur « Handoff » (P9) — la partie doit déjà exister localement (id
-            // transporté par `NSUserActivity`, doc CloudKit 03) ; si elle n'est pas encore
-            // synchronisée sur cet appareil, la reprise échoue silencieusement.
-            .onChange(of: deepLinkRouter.pendingContinuedMatchID) { _, newValue in
-                guard let newValue else { return }
-                deepLinkRouter.pendingContinuedMatchID = nil
-                activeMatch = try? MatchRepository(context: modelContext).match(withID: newValue)
-            }
-            // Doc utilisateur — App Intents (P9) « Commence une partie de… » : même bascule que
-            // le tap sur une ligne du catalogue, `selectedDefinition` ouvre `MatchSetupView`.
-            .onChange(of: deepLinkRouter.pendingGameID) { _, newValue in
-                guard let newValue else { return }
-                deepLinkRouter.pendingGameID = nil
-                selectedDefinition = catalog.allGames.first { $0.id == newValue }
-            }
-            // Doc utilisateur — App Intents (P9) « Reprends ma partie » : même action que le
-            // bouton de la bannière de reprise, déclenchable sans être sur cet onglet.
-            .onChange(of: deepLinkRouter.wantsResume) { _, newValue in
-                guard newValue else { return }
-                deepLinkRouter.wantsResume = false
-                refreshInProgressMatch()
-                if let inProgressMatch {
-                    activeMatch = inProgressMatch
-                    self.inProgressMatch = nil
-                }
-            }
+            // `CaCompteApp.selectedTab` garantit que cet onglet est déjà construit quand l'un de
+            // ces quatre événements arrive — reste à le consommer, ici et dans `.onAppear`
+            // ci-dessous pour le cas où il était déjà en attente au moment du montage (remontée
+            // utilisateur : le scan d'un QR code app fermée n'ouvrait rien de visible).
+            .onChange(of: deepLinkRouter.pendingJoin) { _, _ in consumePendingDeepLinks() }
+            .onChange(of: deepLinkRouter.pendingContinuedMatchID) { _, _ in consumePendingDeepLinks() }
+            .onChange(of: deepLinkRouter.pendingGameID) { _, _ in consumePendingDeepLinks() }
+            .onChange(of: deepLinkRouter.wantsResume) { _, _ in consumePendingDeepLinks() }
             .navigationDestination(item: $activeMatch) { match in
                 MatchPlayView(match: match, context: modelContext, catalog: catalog)
             }
-            .onAppear(perform: refreshInProgressMatch)
+            .onAppear {
+                refreshInProgressMatch()
+                consumePendingDeepLinks()
+            }
             .onChange(of: activeMatch) { oldValue, newValue in
                 // La partie ouverte via la bannière peut s'être terminée entre-temps : on
                 // rafraîchit dès le retour à la liste plutôt que de garder une référence figée
@@ -191,6 +170,34 @@ struct GamesTabView: View {
                 }
             } message: {
                 Text("La partie sera classée comme abandonnée dans l'historique, avec le classement atteint jusque-là. Cette action ne peut pas être annulée.")
+            }
+        }
+    }
+
+    /// Doc utilisateur — un seul point qui vérifie les quatre déclencheurs possibles
+    /// (`DeepLinkRouter`) et agit sur ceux effectivement en attente ; appelé aussi bien depuis
+    /// chaque `.onChange` (nouvel événement pendant que cet onglet est déjà affiché) que depuis
+    /// `.onAppear` (événement déjà arrivé avant que cet onglet n'existe).
+    private func consumePendingDeepLinks() {
+        if let payload = deepLinkRouter.pendingJoin {
+            joinPayloadForSheet = payload
+            deepLinkRouter.pendingJoin = nil
+            isPresentingJoin = true
+        }
+        if let matchID = deepLinkRouter.pendingContinuedMatchID {
+            deepLinkRouter.pendingContinuedMatchID = nil
+            activeMatch = try? MatchRepository(context: modelContext).match(withID: matchID)
+        }
+        if let gameID = deepLinkRouter.pendingGameID {
+            deepLinkRouter.pendingGameID = nil
+            selectedDefinition = catalog.allGames.first { $0.id == gameID }
+        }
+        if deepLinkRouter.wantsResume {
+            deepLinkRouter.wantsResume = false
+            refreshInProgressMatch()
+            if let inProgressMatch {
+                activeMatch = inProgressMatch
+                self.inProgressMatch = nil
             }
         }
     }

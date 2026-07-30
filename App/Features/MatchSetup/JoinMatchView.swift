@@ -77,19 +77,20 @@ struct JoinMatchView: View {
                     if !discoveredHosts.contains(where: { $0.id == host.id }) {
                         discoveredHosts.append(host)
                     }
-                    if let pending = pendingJoinPayload, pending.matchID == host.id {
-                        pendingJoinPayload = nil
-                        pairingCode = pending.pairingCode
-                        isCodePrefilled = true
-                        connectionError = nil
-                        selectedRole = .observer
-                        hostAwaitingCode = host
-                    }
+                    consumePendingJoinPayloadIfDiscovered()
                 }
             }
         }
         .onDisappear {
             discoveryTask?.cancel()
+        }
+        // Doc utilisateur — remontée : scanner un code depuis l'écran de découverte, une fois
+        // déjà ouvert, ne faisait rien. La boucle ci-dessus ne vérifie `pendingJoinPayload` que
+        // pour les hôtes découverts *après* — si le nôtre était déjà dans `discoveredHosts` au
+        // moment du scan (cas courant, la découverte tourne dès l'ouverture de l'écran), rien ne
+        // le revérifiait jamais.
+        .onChange(of: pendingJoinPayload) { _, _ in
+            consumePendingJoinPayloadIfDiscovered()
         }
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .background {
@@ -121,8 +122,10 @@ struct JoinMatchView: View {
 
             if !wifiAvailability.isAvailable {
                 // Doc 09 — mieux vaut le dire clairement que laisser chercher indéfiniment dans
-                // le vide : sans Wi-Fi, aucun hôte ne peut être découvert (pas de secours
-                // Bluetooth branché dans l'app pour l'instant).
+                // le vide : la découverte initiale reste Wi-Fi uniquement (mDNS/DNS-SD) — le
+                // Bluetooth n'intervient qu'en reprise d'une connexion déjà établie
+                // (`reconnect()`, `beginBLEHandoverIfNeeded()`), pas pour trouver un hôte la
+                // toute première fois.
                 EmptyState(
                     icon: "wifi.slash",
                     message: "Le Wi-Fi semble désactivé. Active-le sur cet appareil et sur celui qui partage la partie pour la retrouver."
@@ -153,6 +156,16 @@ struct JoinMatchView: View {
             }
         }
         .listStyle(.plain)
+    }
+
+    private func consumePendingJoinPayloadIfDiscovered() {
+        guard let pending = pendingJoinPayload, let host = discoveredHosts.first(where: { $0.id == pending.matchID }) else { return }
+        pendingJoinPayload = nil
+        pairingCode = pending.pairingCode
+        isCodePrefilled = true
+        connectionError = nil
+        selectedRole = .observer
+        hostAwaitingCode = host
     }
 
     private var scannerCover: some View {

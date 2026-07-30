@@ -5,24 +5,37 @@ import SwiftData
 import SwiftUI
 import WidgetKit
 
+/// Doc utilisateur — onglets adressables par un deep link (`CaCompteApp.selectedTab`) : sans ça,
+/// un lien `cacompte://`/Handoff/App Intent qui arrive alors que « Jeux » n'est pas l'onglet actif
+/// pouvait rester sans effet visible — `TabView` ne construit un onglet non sélectionné qu'à la
+/// demande, `GamesTabView` n'existait donc pas encore pour recevoir l'événement (remontée
+/// utilisateur : « le scan du QR code ouvre bien l'application mais rien ne se passe »).
+private enum AppTab: Hashable {
+    case players, games, history
+}
+
 @main
 struct CaCompteApp: App {
     private let settings = AppSettings()
     private let deepLinkRouter = DeepLinkRouter.shared
     @State private var container: ModelContainer?
+    @State private var selectedTab: AppTab = .players
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some Scene {
         WindowGroup {
             Group {
                 if let container {
-                    TabView {
+                    TabView(selection: $selectedTab) {
                         PlayersListView()
                             .tabItem { Label("Joueurs", systemImage: "person.2.fill") }
+                            .tag(AppTab.players)
                         GamesTabView()
                             .tabItem { Label("Jeux", systemImage: "die.face.5.fill") }
+                            .tag(AppTab.games)
                         HistoryListView(context: container.mainContext, catalog: .embedded)
                             .tabItem { Label("Historique", systemImage: "clock.arrow.circlepath") }
+                            .tag(AppTab.history)
                     }
                     .environment(settings)
                     .environment(deepLinkRouter)
@@ -61,6 +74,22 @@ struct CaCompteApp: App {
             .onContinueUserActivity(MatchContinuation.activityType) { activity in
                 guard let matchID = MatchContinuation.matchID(from: activity) else { return }
                 deepLinkRouter.pendingContinuedMatchID = matchID
+            }
+            // Doc utilisateur — ces quatre déclencheurs (lien, Handoff, App Intents « Commence »/
+            // « Reprends ») veulent tous dire la même chose : montrer l'onglet Jeux. Posé ici (le
+            // `Group` racine, toujours monté dès le lancement) plutôt que dans `GamesTabView` :
+            // c'est justement ce qui manquait pour que l'onglet soit *construit* à temps.
+            .onChange(of: deepLinkRouter.pendingJoin) { _, newValue in
+                if newValue != nil { selectedTab = .games }
+            }
+            .onChange(of: deepLinkRouter.pendingContinuedMatchID) { _, newValue in
+                if newValue != nil { selectedTab = .games }
+            }
+            .onChange(of: deepLinkRouter.pendingGameID) { _, newValue in
+                if newValue != nil { selectedTab = .games }
+            }
+            .onChange(of: deepLinkRouter.wantsResume) { _, newValue in
+                if newValue { selectedTab = .games }
             }
         }
     }
