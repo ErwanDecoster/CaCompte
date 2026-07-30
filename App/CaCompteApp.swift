@@ -7,7 +7,7 @@ import SwiftUI
 @main
 struct CaCompteApp: App {
     private let settings = AppSettings()
-    private let deepLinkRouter = DeepLinkRouter()
+    private let deepLinkRouter = DeepLinkRouter.shared
     @State private var container: ModelContainer?
 
     var body: some Scene {

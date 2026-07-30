@@ -147,6 +147,24 @@ struct GamesTabView: View {
                 deepLinkRouter.pendingContinuedMatchID = nil
                 activeMatch = try? MatchRepository(context: modelContext).match(withID: newValue)
             }
+            // Doc utilisateur — App Intents (P9) « Commence une partie de… » : même bascule que
+            // le tap sur une ligne du catalogue, `selectedDefinition` ouvre `MatchSetupView`.
+            .onChange(of: deepLinkRouter.pendingGameID) { _, newValue in
+                guard let newValue else { return }
+                deepLinkRouter.pendingGameID = nil
+                selectedDefinition = catalog.allGames.first { $0.id == newValue }
+            }
+            // Doc utilisateur — App Intents (P9) « Reprends ma partie » : même action que le
+            // bouton de la bannière de reprise, déclenchable sans être sur cet onglet.
+            .onChange(of: deepLinkRouter.wantsResume) { _, newValue in
+                guard newValue else { return }
+                deepLinkRouter.wantsResume = false
+                refreshInProgressMatch()
+                if let inProgressMatch {
+                    activeMatch = inProgressMatch
+                    self.inProgressMatch = nil
+                }
+            }
             .navigationDestination(item: $activeMatch) { match in
                 MatchPlayView(match: match, context: modelContext, catalog: catalog)
             }
