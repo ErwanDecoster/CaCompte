@@ -1,0 +1,47 @@
+{
+  "id": "petanque",
+  "specVersion": 1,
+  "rulesVersion": 1,
+
+  "name": { "fr": "Pétanque", "en": "Pétanque" },
+  "shortDescription": {
+    "fr": "Seule l'équipe qui remporte la mène marque, de 1 à 6 points ; l'autre entre 0. La partie s'arrête dès qu'une équipe atteint 13.",
+    "en": "Only the team that wins the end scores, 1 to 6 points; the other enters 0. The game ends once a team reaches 13."
+  },
+
+  "symbol": "smallcircle.circle.fill",
+  "paletteID": "olive",
+
+  "players": { "min": 2, "max": 6, "recommended": [2, 4, 6] },
+
+  "scoring": {
+    "direction": "highestWins",
+    "aggregation": "cumulative",
+    "roundLabel": { "fr": "Mène", "en": "End" },
+    "entry": {
+      "kind": "integer",
+      "min": 0,
+      "max": 6,
+      "allowsNegative": false
+    },
+    "modifiers": []
+  },
+
+  "engine": "generic.sum.v1",
+
+  "end": {
+    "conditions": [
+      {
+        "type": "scoreThreshold",
+        "value": 13,
+        "comparison": ">=",
+        "scope": "anyPlayer",
+        "completeRound": true
+      }
+    ]
+  },
+
+  "tieBreak": ["shared"],
+
+  "statsProfiles": ["standard"]
+}

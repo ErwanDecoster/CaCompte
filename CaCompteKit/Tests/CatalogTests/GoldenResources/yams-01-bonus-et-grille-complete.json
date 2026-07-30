@@ -1,0 +1,724 @@
+{
+  "goldenId": "yams-01-bonus-et-grille-complete",
+  "description": "Partie nominale à 2 joueurs, grille complète (13 catégories chacun). Alice franchit le seuil de bonus (63) sur sa catégorie « sixes » (52 → 70) et bénéficie donc de +35 sur cette entrée ; Bob ne l'atteint jamais (41 au total en section haute). « doubled » ici ne signifie pas « doublement » (notion propre à Skyjo) mais suit la même mécanique de test : `computedValue != rawValue`, ce qui est la norme pour `multipleOf` (dés × valeur) et les catégories `fixed` obtenues, pas une anomalie. Vérifie aussi une case ratée (raw=0) et que la partie ne se termine qu'une fois les deux grilles entièrement remplies (allSheetsComplete).",
+  "gameId": "yams",
+  "rulesVersion": 1,
+  "variants": {
+    "upperBonusThreshold": 63
+  },
+  "participants": [
+    {
+      "id": "p1",
+      "name": "Alice",
+      "seatIndex": 0
+    },
+    {
+      "id": "p2",
+      "name": "Bob",
+      "seatIndex": 1
+    }
+  ],
+  "rounds": [
+    {
+      "index": 0,
+      "inputs": [
+        {
+          "participant": "p1",
+          "rawValue": 3,
+          "modifiers": [],
+          "detail": {
+            "categoryID": "ones"
+          }
+        }
+      ]
+    },
+    {
+      "index": 1,
+      "inputs": [
+        {
+          "participant": "p2",
+          "rawValue": 1,
+          "modifiers": [],
+          "detail": {
+            "categoryID": "ones"
+          }
+        }
+      ]
+    },
+    {
+      "index": 2,
+      "inputs": [
+        {
+          "participant": "p1",
+          "rawValue": 3,
+          "modifiers": [],
+          "detail": {
+            "categoryID": "twos"
+          }
+        }
+      ]
+    },
+    {
+      "index": 3,
+      "inputs": [
+        {
+          "participant": "p2",
+          "rawValue": 2,
+          "modifiers": [],
+          "detail": {
+            "categoryID": "twos"
+          }
+        }
+      ]
+    },
+    {
+      "index": 4,
+      "inputs": [
+        {
+          "participant": "p1",
+          "rawValue": 4,
+          "modifiers": [],
+          "detail": {
+            "categoryID": "threes"
+          }
+        }
+      ]
+    },
+    {
+      "index": 5,
+      "inputs": [
+        {
+          "participant": "p2",
+          "rawValue": 2,
+          "modifiers": [],
+          "detail": {
+            "categoryID": "threes"
+          }
+        }
+      ]
+    },
+    {
+      "index": 6,
+      "inputs": [
+        {
+          "participant": "p1",
+          "rawValue": 4,
+          "modifiers": [],
+          "detail": {
+            "categoryID": "fours"
+          }
+        }
+      ]
+    },
+    {
+      "index": 7,
+      "inputs": [
+        {
+          "participant": "p2",
+          "rawValue": 2,
+          "modifiers": [],
+          "detail": {
+            "categoryID": "fours"
+          }
+        }
+      ]
+    },
+    {
+      "index": 8,
+      "inputs": [
+        {
+          "participant": "p1",
+          "rawValue": 3,
+          "modifiers": [],
+          "detail": {
+            "categoryID": "fives"
+          }
+        }
+      ]
+    },
+    {
+      "index": 9,
+      "inputs": [
+        {
+          "participant": "p2",
+          "rawValue": 2,
+          "modifiers": [],
+          "detail": {
+            "categoryID": "fives"
+          }
+        }
+      ]
+    },
+    {
+      "index": 10,
+      "inputs": [
+        {
+          "participant": "p1",
+          "rawValue": 3,
+          "modifiers": [],
+          "detail": {
+            "categoryID": "sixes"
+          }
+        }
+      ]
+    },
+    {
+      "index": 11,
+      "inputs": [
+        {
+          "participant": "p2",
+          "rawValue": 2,
+          "modifiers": [],
+          "detail": {
+            "categoryID": "sixes"
+          }
+        }
+      ]
+    },
+    {
+      "index": 12,
+      "inputs": [
+        {
+          "participant": "p1",
+          "rawValue": 22,
+          "modifiers": [],
+          "detail": {
+            "categoryID": "threeOfAKind"
+          }
+        }
+      ]
+    },
+    {
+      "index": 13,
+      "inputs": [
+        {
+          "participant": "p2",
+          "rawValue": 18,
+          "modifiers": [],
+          "detail": {
+            "categoryID": "threeOfAKind"
+          }
+        }
+      ]
+    },
+    {
+      "index": 14,
+      "inputs": [
+        {
+          "participant": "p1",
+          "rawValue": 24,
+          "modifiers": [],
+          "detail": {
+            "categoryID": "fourOfAKind"
+          }
+        }
+      ]
+    },
+    {
+      "index": 15,
+      "inputs": [
+        {
+          "participant": "p2",
+          "rawValue": 0,
+          "modifiers": [],
+          "detail": {
+            "categoryID": "fourOfAKind"
+          }
+        }
+      ]
+    },
+    {
+      "index": 16,
+      "inputs": [
+        {
+          "participant": "p1",
+          "rawValue": 1,
+          "modifiers": [],
+          "detail": {
+            "categoryID": "fullHouse"
+          }
+        }
+      ]
+    },
+    {
+      "index": 17,
+      "inputs": [
+        {
+          "participant": "p2",
+          "rawValue": 0,
+          "modifiers": [],
+          "detail": {
+            "categoryID": "fullHouse"
+          }
+        }
+      ]
+    },
+    {
+      "index": 18,
+      "inputs": [
+        {
+          "participant": "p1",
+          "rawValue": 1,
+          "modifiers": [],
+          "detail": {
+            "categoryID": "smallStraight"
+          }
+        }
+      ]
+    },
+    {
+      "index": 19,
+      "inputs": [
+        {
+          "participant": "p2",
+          "rawValue": 1,
+          "modifiers": [],
+          "detail": {
+            "categoryID": "smallStraight"
+          }
+        }
+      ]
+    },
+    {
+      "index": 20,
+      "inputs": [
+        {
+          "participant": "p1",
+          "rawValue": 0,
+          "modifiers": [],
+          "detail": {
+            "categoryID": "largeStraight"
+          }
+        }
+      ]
+    },
+    {
+      "index": 21,
+      "inputs": [
+        {
+          "participant": "p2",
+          "rawValue": 1,
+          "modifiers": [],
+          "detail": {
+            "categoryID": "largeStraight"
+          }
+        }
+      ]
+    },
+    {
+      "index": 22,
+      "inputs": [
+        {
+          "participant": "p1",
+          "rawValue": 1,
+          "modifiers": [],
+          "detail": {
+            "categoryID": "yams"
+          }
+        }
+      ]
+    },
+    {
+      "index": 23,
+      "inputs": [
+        {
+          "participant": "p2",
+          "rawValue": 0,
+          "modifiers": [],
+          "detail": {
+            "categoryID": "yams"
+          }
+        }
+      ]
+    },
+    {
+      "index": 24,
+      "inputs": [
+        {
+          "participant": "p1",
+          "rawValue": 20,
+          "modifiers": [],
+          "detail": {
+            "categoryID": "chance"
+          }
+        }
+      ]
+    },
+    {
+      "index": 25,
+      "inputs": [
+        {
+          "participant": "p2",
+          "rawValue": 15,
+          "modifiers": [],
+          "detail": {
+            "categoryID": "chance"
+          }
+        }
+      ]
+    }
+  ],
+  "expected": {
+    "roundResults": [
+      {
+        "index": 0,
+        "computed": {
+          "p1": 3
+        },
+        "cumulative": {
+          "p1": 3,
+          "p2": 0
+        },
+        "doubled": [],
+        "status": "inProgress"
+      },
+      {
+        "index": 1,
+        "computed": {
+          "p2": 1
+        },
+        "cumulative": {
+          "p1": 3,
+          "p2": 1
+        },
+        "doubled": [],
+        "status": "inProgress"
+      },
+      {
+        "index": 2,
+        "computed": {
+          "p1": 6
+        },
+        "cumulative": {
+          "p1": 9,
+          "p2": 1
+        },
+        "doubled": [
+          "p1"
+        ],
+        "status": "inProgress"
+      },
+      {
+        "index": 3,
+        "computed": {
+          "p2": 4
+        },
+        "cumulative": {
+          "p1": 9,
+          "p2": 5
+        },
+        "doubled": [
+          "p2"
+        ],
+        "status": "inProgress"
+      },
+      {
+        "index": 4,
+        "computed": {
+          "p1": 12
+        },
+        "cumulative": {
+          "p1": 21,
+          "p2": 5
+        },
+        "doubled": [
+          "p1"
+        ],
+        "status": "inProgress"
+      },
+      {
+        "index": 5,
+        "computed": {
+          "p2": 6
+        },
+        "cumulative": {
+          "p1": 21,
+          "p2": 11
+        },
+        "doubled": [
+          "p2"
+        ],
+        "status": "inProgress"
+      },
+      {
+        "index": 6,
+        "computed": {
+          "p1": 16
+        },
+        "cumulative": {
+          "p1": 37,
+          "p2": 11
+        },
+        "doubled": [
+          "p1"
+        ],
+        "status": "inProgress"
+      },
+      {
+        "index": 7,
+        "computed": {
+          "p2": 8
+        },
+        "cumulative": {
+          "p1": 37,
+          "p2": 19
+        },
+        "doubled": [
+          "p2"
+        ],
+        "status": "inProgress"
+      },
+      {
+        "index": 8,
+        "computed": {
+          "p1": 15
+        },
+        "cumulative": {
+          "p1": 52,
+          "p2": 19
+        },
+        "doubled": [
+          "p1"
+        ],
+        "status": "inProgress"
+      },
+      {
+        "index": 9,
+        "computed": {
+          "p2": 10
+        },
+        "cumulative": {
+          "p1": 52,
+          "p2": 29
+        },
+        "doubled": [
+          "p2"
+        ],
+        "status": "inProgress"
+      },
+      {
+        "index": 10,
+        "computed": {
+          "p1": 53
+        },
+        "cumulative": {
+          "p1": 105,
+          "p2": 29
+        },
+        "doubled": [
+          "p1"
+        ],
+        "status": "inProgress"
+      },
+      {
+        "index": 11,
+        "computed": {
+          "p2": 12
+        },
+        "cumulative": {
+          "p1": 105,
+          "p2": 41
+        },
+        "doubled": [
+          "p2"
+        ],
+        "status": "inProgress"
+      },
+      {
+        "index": 12,
+        "computed": {
+          "p1": 22
+        },
+        "cumulative": {
+          "p1": 127,
+          "p2": 41
+        },
+        "doubled": [],
+        "status": "inProgress"
+      },
+      {
+        "index": 13,
+        "computed": {
+          "p2": 18
+        },
+        "cumulative": {
+          "p1": 127,
+          "p2": 59
+        },
+        "doubled": [],
+        "status": "inProgress"
+      },
+      {
+        "index": 14,
+        "computed": {
+          "p1": 24
+        },
+        "cumulative": {
+          "p1": 151,
+          "p2": 59
+        },
+        "doubled": [],
+        "status": "inProgress"
+      },
+      {
+        "index": 15,
+        "computed": {
+          "p2": 0
+        },
+        "cumulative": {
+          "p1": 151,
+          "p2": 59
+        },
+        "doubled": [],
+        "status": "inProgress"
+      },
+      {
+        "index": 16,
+        "computed": {
+          "p1": 25
+        },
+        "cumulative": {
+          "p1": 176,
+          "p2": 59
+        },
+        "doubled": [
+          "p1"
+        ],
+        "status": "inProgress"
+      },
+      {
+        "index": 17,
+        "computed": {
+          "p2": 0
+        },
+        "cumulative": {
+          "p1": 176,
+          "p2": 59
+        },
+        "doubled": [],
+        "status": "inProgress"
+      },
+      {
+        "index": 18,
+        "computed": {
+          "p1": 30
+        },
+        "cumulative": {
+          "p1": 206,
+          "p2": 59
+        },
+        "doubled": [
+          "p1"
+        ],
+        "status": "inProgress"
+      },
+      {
+        "index": 19,
+        "computed": {
+          "p2": 30
+        },
+        "cumulative": {
+          "p1": 206,
+          "p2": 89
+        },
+        "doubled": [
+          "p2"
+        ],
+        "status": "inProgress"
+      },
+      {
+        "index": 20,
+        "computed": {
+          "p1": 0
+        },
+        "cumulative": {
+          "p1": 206,
+          "p2": 89
+        },
+        "doubled": [],
+        "status": "inProgress"
+      },
+      {
+        "index": 21,
+        "computed": {
+          "p2": 40
+        },
+        "cumulative": {
+          "p1": 206,
+          "p2": 129
+        },
+        "doubled": [
+          "p2"
+        ],
+        "status": "inProgress"
+      },
+      {
+        "index": 22,
+        "computed": {
+          "p1": 50
+        },
+        "cumulative": {
+          "p1": 256,
+          "p2": 129
+        },
+        "doubled": [
+          "p1"
+        ],
+        "status": "inProgress"
+      },
+      {
+        "index": 23,
+        "computed": {
+          "p2": 0
+        },
+        "cumulative": {
+          "p1": 256,
+          "p2": 129
+        },
+        "doubled": [],
+        "status": "inProgress"
+      },
+      {
+        "index": 24,
+        "computed": {
+          "p1": 20
+        },
+        "cumulative": {
+          "p1": 276,
+          "p2": 129
+        },
+        "doubled": [],
+        "status": "inProgress"
+      },
+      {
+        "index": 25,
+        "computed": {
+          "p2": 15
+        },
+        "cumulative": {
+          "p1": 276,
+          "p2": 144
+        },
+        "doubled": [],
+        "status": "ended"
+      }
+    ],
+    "final": {
+      "status": "ended",
+      "reason": "allSheetsComplete",
+      "standings": [
+        {
+          "participant": "p1",
+          "rank": 1,
+          "score": 276
+        },
+        {
+          "participant": "p2",
+          "rank": 2,
+          "score": 144
+        }
+      ]
+    },
+    "insights": []
+  }
+}

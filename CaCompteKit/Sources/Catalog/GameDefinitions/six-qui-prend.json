@@ -1,0 +1,46 @@
+{
+  "id": "six-qui-prend",
+  "specVersion": 1,
+  "rulesVersion": 1,
+
+  "name": { "fr": "6 qui prend", "en": "6 Nimmt!" },
+  "shortDescription": {
+    "fr": "On accumule des têtes de bœuf, le plus bas gagne. La partie s'arrête dès qu'un joueur atteint 66.",
+    "en": "You collect ox heads, lowest wins. The game ends once a player reaches 66."
+  },
+
+  "symbol": "6.circle.fill",
+  "paletteID": "vermillon",
+
+  "players": { "min": 2, "max": 10, "recommended": [4, 5, 6] },
+
+  "scoring": {
+    "direction": "lowestWins",
+    "aggregation": "cumulative",
+    "roundLabel": { "fr": "Manche", "en": "Round" },
+    "entry": {
+      "kind": "integer",
+      "min": 0,
+      "allowsNegative": false
+    },
+    "modifiers": []
+  },
+
+  "engine": "generic.sum.v1",
+
+  "end": {
+    "conditions": [
+      {
+        "type": "scoreThreshold",
+        "value": 66,
+        "comparison": ">=",
+        "scope": "anyPlayer",
+        "completeRound": true
+      }
+    ]
+  },
+
+  "tieBreak": ["shared"],
+
+  "statsProfiles": ["standard"]
+}

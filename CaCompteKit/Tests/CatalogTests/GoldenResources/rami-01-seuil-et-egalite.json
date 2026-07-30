@@ -1,0 +1,82 @@
+{
+  "goldenId": "rami-01-seuil-et-egalite",
+  "description": "Partie nominale à 3 joueurs. Alice franchit exactement 251 (limite >=) à la manche 2, ce qui arrête la partie. Bob et Chloé terminent à égalité parfaite (150) : comme aucune règle de départage autre que 'shared' n'est déclarée, ils partagent le rang 1 — Alice, seule au-dessus du seuil, est dernière.",
+  "gameId": "rami",
+  "rulesVersion": 1,
+
+  "variants": { "threshold": 251 },
+
+  "participants": [
+    { "id": "p1", "name": "Alice", "seatIndex": 0 },
+    { "id": "p2", "name": "Bob", "seatIndex": 1 },
+    { "id": "p3", "name": "Chloé", "seatIndex": 2 }
+  ],
+
+  "rounds": [
+    {
+      "index": 0,
+      "inputs": [
+        { "participant": "p1", "rawValue": 90, "modifiers": [] },
+        { "participant": "p2", "rawValue": 40, "modifiers": [] },
+        { "participant": "p3", "rawValue": 50, "modifiers": [] }
+      ]
+    },
+    {
+      "index": 1,
+      "inputs": [
+        { "participant": "p1", "rawValue": 90, "modifiers": [] },
+        { "participant": "p2", "rawValue": 60, "modifiers": [] },
+        { "participant": "p3", "rawValue": 50, "modifiers": [] }
+      ]
+    },
+    {
+      "index": 2,
+      "inputs": [
+        { "participant": "p1", "rawValue": 71, "modifiers": [] },
+        { "participant": "p2", "rawValue": 50, "modifiers": [] },
+        { "participant": "p3", "rawValue": 50, "modifiers": [] }
+      ]
+    }
+  ],
+
+  "expected": {
+    "roundResults": [
+      {
+        "index": 0,
+        "computed": { "p1": 90, "p2": 40, "p3": 50 },
+        "cumulative": { "p1": 90, "p2": 40, "p3": 50 },
+        "doubled": [],
+        "status": "inProgress"
+      },
+      {
+        "index": 1,
+        "computed": { "p1": 90, "p2": 60, "p3": 50 },
+        "cumulative": { "p1": 180, "p2": 100, "p3": 100 },
+        "doubled": [],
+        "status": "inProgress"
+      },
+      {
+        "index": 2,
+        "comment": "Alice atteint exactement 251 : la comparaison >= déclenche la fin sur l'égalité stricte, pas seulement au-delà.",
+        "computed": { "p1": 71, "p2": 50, "p3": 50 },
+        "cumulative": { "p1": 251, "p2": 150, "p3": 150 },
+        "doubled": [],
+        "status": "ended"
+      }
+    ],
+
+    "final": {
+      "status": "ended",
+      "reason": "scoreThreshold",
+      "standings": [
+        { "participant": "p2", "rank": 1, "score": 150, "sharedWith": ["p3"] },
+        { "participant": "p3", "rank": 1, "score": 150, "sharedWith": ["p2"] },
+        { "participant": "p1", "rank": 3, "score": 251 }
+      ]
+    },
+
+    "insights": [
+      { "id": "finalGap", "value": 0 }
+    ]
+  }
+}

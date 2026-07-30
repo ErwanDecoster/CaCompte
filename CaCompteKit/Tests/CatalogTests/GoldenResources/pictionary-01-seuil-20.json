@@ -1,0 +1,77 @@
+{
+  "goldenId": "pictionary-01-seuil-20",
+  "description": "Partie nominale à 2 équipes. L'équipe Rouge atteint exactement 20 (limite >=) à la manche 2, ce qui arrête la partie.",
+  "gameId": "pictionary",
+  "rulesVersion": 1,
+
+  "variants": { "threshold": 20 },
+
+  "participants": [
+    { "id": "p1", "name": "Équipe Rouge", "seatIndex": 0 },
+    { "id": "p2", "name": "Équipe Bleue", "seatIndex": 1 }
+  ],
+
+  "rounds": [
+    {
+      "index": 0,
+      "inputs": [
+        { "participant": "p1", "rawValue": 7, "modifiers": [] },
+        { "participant": "p2", "rawValue": 5, "modifiers": [] }
+      ]
+    },
+    {
+      "index": 1,
+      "inputs": [
+        { "participant": "p1", "rawValue": 6, "modifiers": [] },
+        { "participant": "p2", "rawValue": 8, "modifiers": [] }
+      ]
+    },
+    {
+      "index": 2,
+      "inputs": [
+        { "participant": "p1", "rawValue": 7, "modifiers": [] },
+        { "participant": "p2", "rawValue": 4, "modifiers": [] }
+      ]
+    }
+  ],
+
+  "expected": {
+    "roundResults": [
+      {
+        "index": 0,
+        "computed": { "p1": 7, "p2": 5 },
+        "cumulative": { "p1": 7, "p2": 5 },
+        "doubled": [],
+        "status": "inProgress"
+      },
+      {
+        "index": 1,
+        "computed": { "p1": 6, "p2": 8 },
+        "cumulative": { "p1": 13, "p2": 13 },
+        "doubled": [],
+        "status": "inProgress"
+      },
+      {
+        "index": 2,
+        "comment": "L'équipe Rouge atteint exactement 20 : la comparaison >= déclenche la fin sur l'égalité stricte.",
+        "computed": { "p1": 7, "p2": 4 },
+        "cumulative": { "p1": 20, "p2": 17 },
+        "doubled": [],
+        "status": "ended"
+      }
+    ],
+
+    "final": {
+      "status": "ended",
+      "reason": "scoreThreshold",
+      "standings": [
+        { "participant": "p1", "rank": 1, "score": 20 },
+        { "participant": "p2", "rank": 2, "score": 17 }
+      ]
+    },
+
+    "insights": [
+      { "id": "finalGap", "value": 3 }
+    ]
+  }
+}

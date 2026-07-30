@@ -1,0 +1,47 @@
+{
+  "id": "molkky",
+  "specVersion": 1,
+  "rulesVersion": 1,
+
+  "name": { "fr": "Mölkky", "en": "Mölkky" },
+  "shortDescription": {
+    "fr": "Chaque quille tombée compte pour sa valeur (0 à 12). Dépasser 50 ramène le score à 25. Trois lancers ratés d'affilée éliminent. Premier joueur à exactement 50 gagne.",
+    "en": "Each fallen skittle counts for its value (0 to 12). Going over 50 resets the score to 25. Three consecutive misses eliminate a player. First to exactly 50 wins."
+  },
+
+  "symbol": "target",
+  "paletteID": "violet",
+
+  "players": { "min": 2, "max": 8, "recommended": [2, 4, 6] },
+
+  "scoring": {
+    "direction": "targetExact",
+    "aggregation": "cumulative",
+    "roundLabel": { "fr": "Lancer", "en": "Throw" },
+    "entry": {
+      "kind": "integer",
+      "min": 0,
+      "max": 12,
+      "allowsNegative": false
+    },
+    "modifiers": []
+  },
+
+  "engine": "molkky.v1",
+
+  "end": {
+    "conditions": [
+      {
+        "type": "targetReached",
+        "value": 50,
+        "comparison": "==",
+        "scope": "anyPlayer",
+        "completeRound": false
+      }
+    ]
+  },
+
+  "tieBreak": ["shared"],
+
+  "statsProfiles": ["standard"]
+}

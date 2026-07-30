@@ -1,0 +1,67 @@
+{
+  "goldenId": "jeu-libre-01-fin-manuelle",
+  "description": "Partie nominale à 3 joueurs, score le plus haut gagne, valeurs négatives autorisées. La fin est `manualStop` : `endCheck` ne peut jamais la détecter automatiquement (contrairement aux autres jeux du catalogue), donc le statut reste `inProgress` après chaque manche rejouée ici — la fin réelle est une action explicite hors du journal de manches (`MatchRepository.endMatchManually`, testé séparément côté Store). Ce golden vérifie que les cumuls et le classement provisoire restent corrects malgré ça.",
+  "gameId": "jeu-libre",
+  "rulesVersion": 1,
+
+  "variants": {},
+
+  "participants": [
+    { "id": "p1", "name": "Alice", "seatIndex": 0 },
+    { "id": "p2", "name": "Bob", "seatIndex": 1 },
+    { "id": "p3", "name": "Chloé", "seatIndex": 2 }
+  ],
+
+  "rounds": [
+    {
+      "index": 0,
+      "inputs": [
+        { "participant": "p1", "rawValue": 10, "modifiers": [] },
+        { "participant": "p2", "rawValue": 8, "modifiers": [] },
+        { "participant": "p3", "rawValue": -3, "modifiers": [] }
+      ]
+    },
+    {
+      "index": 1,
+      "inputs": [
+        { "participant": "p1", "rawValue": 5, "modifiers": [] },
+        { "participant": "p2", "rawValue": 12, "modifiers": [] },
+        { "participant": "p3", "rawValue": 7, "modifiers": [] }
+      ]
+    }
+  ],
+
+  "expected": {
+    "roundResults": [
+      {
+        "index": 0,
+        "computed": { "p1": 10, "p2": 8, "p3": -3 },
+        "cumulative": { "p1": 10, "p2": 8, "p3": -3 },
+        "doubled": [],
+        "status": "inProgress"
+      },
+      {
+        "index": 1,
+        "comment": "Aucune manche ne peut faire passer le statut à 'ended' : manualStop n'est jamais détecté automatiquement.",
+        "computed": { "p1": 5, "p2": 12, "p3": 7 },
+        "cumulative": { "p1": 15, "p2": 20, "p3": 4 },
+        "doubled": [],
+        "status": "inProgress"
+      }
+    ],
+
+    "final": {
+      "status": "inProgress",
+      "reason": null,
+      "standings": [
+        { "participant": "p2", "rank": 1, "score": 20 },
+        { "participant": "p1", "rank": 2, "score": 15 },
+        { "participant": "p3", "rank": 3, "score": 4 }
+      ]
+    },
+
+    "insights": [
+      { "id": "finalGap", "value": 5 }
+    ]
+  }
+}

@@ -1,0 +1,122 @@
+{
+  "goldenId": "skyjo-01-doublement",
+  "description": "Partie nominale à 3 joueurs. Couvre les deux cas de doublement : score non le plus bas (manche 0) et score à égalité avec le plus bas (manche 2). Vérifie aussi qu'un score négatif ne double jamais et que la partie s'arrête à la fin de la manche où 100 est franchi.",
+  "gameId": "skyjo",
+  "rulesVersion": 1,
+
+  "variants": { "threshold": 100, "doublePenalty": true },
+
+  "participants": [
+    { "id": "p1", "name": "Alice", "seatIndex": 0 },
+    { "id": "p2", "name": "Bob", "seatIndex": 1 },
+    { "id": "p3", "name": "Chloé", "seatIndex": 2 }
+  ],
+
+  "rounds": [
+    {
+      "index": 0,
+      "inputs": [
+        { "participant": "p1", "rawValue": 12, "modifiers": ["closedRound"] },
+        { "participant": "p2", "rawValue": 8, "modifiers": [] },
+        { "participant": "p3", "rawValue": 15, "modifiers": [] }
+      ]
+    },
+    {
+      "index": 1,
+      "inputs": [
+        { "participant": "p1", "rawValue": 20, "modifiers": [] },
+        { "participant": "p2", "rawValue": 5, "modifiers": ["closedRound"] },
+        { "participant": "p3", "rawValue": 9, "modifiers": [] }
+      ]
+    },
+    {
+      "index": 2,
+      "inputs": [
+        { "participant": "p1", "rawValue": 30, "modifiers": [] },
+        { "participant": "p2", "rawValue": 4, "modifiers": [] },
+        { "participant": "p3", "rawValue": 4, "modifiers": ["closedRound"] }
+      ]
+    },
+    {
+      "index": 3,
+      "inputs": [
+        { "participant": "p1", "rawValue": -2, "modifiers": ["closedRound"] },
+        { "participant": "p2", "rawValue": 30, "modifiers": [] },
+        { "participant": "p3", "rawValue": 22, "modifiers": [] }
+      ]
+    },
+    {
+      "index": 4,
+      "inputs": [
+        { "participant": "p1", "rawValue": 35, "modifiers": [] },
+        { "participant": "p2", "rawValue": 3, "modifiers": ["closedRound"] },
+        { "participant": "p3", "rawValue": 40, "modifiers": [] }
+      ]
+    }
+  ],
+
+  "expected": {
+    "roundResults": [
+      {
+        "index": 0,
+        "comment": "Alice ferme avec 12, Bob a 8 : Alice n'a pas le score le plus bas, son score est doublé.",
+        "computed": { "p1": 24, "p2": 8, "p3": 15 },
+        "cumulative": { "p1": 24, "p2": 8, "p3": 15 },
+        "doubled": ["p1"],
+        "status": "inProgress"
+      },
+      {
+        "index": 1,
+        "comment": "Bob ferme avec 5, strictement le plus bas : pas de doublement.",
+        "computed": { "p1": 20, "p2": 5, "p3": 9 },
+        "cumulative": { "p1": 44, "p2": 13, "p3": 24 },
+        "doubled": [],
+        "status": "inProgress"
+      },
+      {
+        "index": 2,
+        "comment": "Chloé ferme avec 4, à égalité avec Bob : l'égalité ne protège pas, son score est doublé.",
+        "computed": { "p1": 30, "p2": 4, "p3": 8 },
+        "cumulative": { "p1": 74, "p2": 17, "p3": 32 },
+        "doubled": ["p3"],
+        "status": "inProgress"
+      },
+      {
+        "index": 3,
+        "comment": "Alice ferme avec -2, strictement le plus bas : pas de doublement. Un score négatif ne double jamais.",
+        "computed": { "p1": -2, "p2": 30, "p3": 22 },
+        "cumulative": { "p1": 72, "p2": 47, "p3": 54 },
+        "doubled": [],
+        "status": "inProgress"
+      },
+      {
+        "index": 4,
+        "comment": "Alice franchit 100 en fin de manche : la partie s'arrête, tout le monde a joué le même nombre de manches.",
+        "computed": { "p1": 35, "p2": 3, "p3": 40 },
+        "cumulative": { "p1": 107, "p2": 50, "p3": 94 },
+        "doubled": [],
+        "status": "ended"
+      }
+    ],
+
+    "final": {
+      "status": "ended",
+      "reason": "scoreThreshold",
+      "standings": [
+        { "participant": "p2", "rank": 1, "score": 50 },
+        { "participant": "p3", "rank": 2, "score": 94 },
+        { "participant": "p1", "rank": 3, "score": 107 }
+      ]
+    },
+
+    "insights": [
+      { "id": "highestRoundScore", "participant": "p3", "value": 40, "round": 4 },
+      { "id": "bestRoundScore", "participant": "p1", "value": -2, "round": 3 },
+      { "id": "mostRegular", "participant": "p2", "value": 10.14 },
+      { "id": "leadChanges", "value": 0 },
+      { "id": "longestLeadStreak", "participant": "p2", "value": 5 },
+      { "id": "roundsClosed", "values": { "p1": 2, "p2": 2, "p3": 1 } },
+      { "id": "doublingsSuffered", "values": { "p1": 1, "p2": 0, "p3": 1 } }
+    ]
+  }
+}

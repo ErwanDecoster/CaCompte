@@ -1,0 +1,82 @@
+{
+  "goldenId": "odin-01-egalite-partagee",
+  "description": "Partie nominale à 3 joueurs, score le plus bas gagne. Alice franchit exactement 15 (limite >=) à la manche 2, ce qui arrête la partie. Alice et Chloé terminent à égalité parfaite (15) et partagent la victoire (rang 1) ; Bob, seul au-dessus, est dernier.",
+  "gameId": "odin",
+  "rulesVersion": 1,
+
+  "variants": { "threshold": 15 },
+
+  "participants": [
+    { "id": "p1", "name": "Alice", "seatIndex": 0 },
+    { "id": "p2", "name": "Bob", "seatIndex": 1 },
+    { "id": "p3", "name": "Chloé", "seatIndex": 2 }
+  ],
+
+  "rounds": [
+    {
+      "index": 0,
+      "inputs": [
+        { "participant": "p1", "rawValue": 4, "modifiers": [] },
+        { "participant": "p2", "rawValue": 6, "modifiers": [] },
+        { "participant": "p3", "rawValue": 5, "modifiers": [] }
+      ]
+    },
+    {
+      "index": 1,
+      "inputs": [
+        { "participant": "p1", "rawValue": 5, "modifiers": [] },
+        { "participant": "p2", "rawValue": 4, "modifiers": [] },
+        { "participant": "p3", "rawValue": 6, "modifiers": [] }
+      ]
+    },
+    {
+      "index": 2,
+      "inputs": [
+        { "participant": "p1", "rawValue": 6, "modifiers": [] },
+        { "participant": "p2", "rawValue": 6, "modifiers": [] },
+        { "participant": "p3", "rawValue": 4, "modifiers": [] }
+      ]
+    }
+  ],
+
+  "expected": {
+    "roundResults": [
+      {
+        "index": 0,
+        "computed": { "p1": 4, "p2": 6, "p3": 5 },
+        "cumulative": { "p1": 4, "p2": 6, "p3": 5 },
+        "doubled": [],
+        "status": "inProgress"
+      },
+      {
+        "index": 1,
+        "computed": { "p1": 5, "p2": 4, "p3": 6 },
+        "cumulative": { "p1": 9, "p2": 10, "p3": 11 },
+        "doubled": [],
+        "status": "inProgress"
+      },
+      {
+        "index": 2,
+        "comment": "Alice atteint exactement 15 : la comparaison >= déclenche la fin sur l'égalité stricte.",
+        "computed": { "p1": 6, "p2": 6, "p3": 4 },
+        "cumulative": { "p1": 15, "p2": 16, "p3": 15 },
+        "doubled": [],
+        "status": "ended"
+      }
+    ],
+
+    "final": {
+      "status": "ended",
+      "reason": "scoreThreshold",
+      "standings": [
+        { "participant": "p1", "rank": 1, "score": 15, "sharedWith": ["p3"] },
+        { "participant": "p3", "rank": 1, "score": 15, "sharedWith": ["p1"] },
+        { "participant": "p2", "rank": 3, "score": 16 }
+      ]
+    },
+
+    "insights": [
+      { "id": "finalGap", "value": 0 }
+    ]
+  }
+}

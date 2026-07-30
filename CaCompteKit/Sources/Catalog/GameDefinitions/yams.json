@@ -1,0 +1,74 @@
+{
+  "id": "yams",
+  "specVersion": 1,
+  "rulesVersion": 1,
+
+  "name": { "fr": "Yams", "en": "Yahtzee" },
+  "shortDescription": {
+    "fr": "Treize catégories à remplir. Bonus de 35 points si la section haute atteint 63.",
+    "en": "Thirteen categories to fill. 35-point bonus if the upper section reaches 63."
+  },
+
+  "symbol": "dice.fill",
+  "paletteID": "emeraude",
+
+  "players": { "min": 1, "max": 8, "recommended": [2, 3, 4] },
+
+  "scoring": {
+    "direction": "highestWins",
+    "aggregation": "cumulative",
+    "roundLabel": { "fr": "Tour", "en": "Turn" },
+    "entry": {
+      "kind": "categorySheet",
+      "min": 0,
+      "max": 50,
+      "categories": [
+        { "id": "ones",   "label": { "fr": "As",    "en": "Ones" },   "section": "upper", "scoring": { "kind": "multipleOf", "value": 1, "max": 5 } },
+        { "id": "twos",   "label": { "fr": "Deux",  "en": "Twos" },   "section": "upper", "scoring": { "kind": "multipleOf", "value": 2, "max": 10 } },
+        { "id": "threes", "label": { "fr": "Trois", "en": "Threes" }, "section": "upper", "scoring": { "kind": "multipleOf", "value": 3, "max": 15 } },
+        { "id": "fours",  "label": { "fr": "Quatre","en": "Fours" },  "section": "upper", "scoring": { "kind": "multipleOf", "value": 4, "max": 20 } },
+        { "id": "fives",  "label": { "fr": "Cinq",  "en": "Fives" },  "section": "upper", "scoring": { "kind": "multipleOf", "value": 5, "max": 25 } },
+        { "id": "sixes",  "label": { "fr": "Six",   "en": "Sixes" },  "section": "upper", "scoring": { "kind": "multipleOf", "value": 6, "max": 30 } },
+
+        { "id": "threeOfAKind", "label": { "fr": "Brelan",        "en": "Three of a kind" }, "section": "lower", "scoring": { "kind": "sumOfDice", "max": 30 } },
+        { "id": "fourOfAKind",  "label": { "fr": "Carré",         "en": "Four of a kind" },  "section": "lower", "scoring": { "kind": "sumOfDice", "max": 30 } },
+        { "id": "fullHouse",    "label": { "fr": "Full",          "en": "Full house" },      "section": "lower", "scoring": { "kind": "fixed", "value": 25 } },
+        { "id": "smallStraight","label": { "fr": "Petite suite",  "en": "Small straight" },  "section": "lower", "scoring": { "kind": "fixed", "value": 30 } },
+        { "id": "largeStraight","label": { "fr": "Grande suite",  "en": "Large straight" },  "section": "lower", "scoring": { "kind": "fixed", "value": 40 } },
+        { "id": "yams",         "label": { "fr": "Yams",          "en": "Yahtzee" },         "section": "lower", "scoring": { "kind": "fixed", "value": 50 } },
+        { "id": "chance",       "label": { "fr": "Chance",        "en": "Chance" },          "section": "lower", "scoring": { "kind": "sumOfDice", "max": 30 } }
+      ]
+    },
+    "modifiers": []
+  },
+
+  "engine": "yams.v1",
+
+  "end": {
+    "conditions": [
+      {
+        "type": "allSheetsComplete",
+        "scope": "allPlayers",
+        "completeRound": false
+      }
+    ]
+  },
+
+  "tieBreak": ["higherSecondaryScore", "shared"],
+
+  "variants": [
+    {
+      "id": "upperBonusThreshold",
+      "label": { "fr": "Seuil du bonus", "en": "Bonus threshold" },
+      "help": {
+        "fr": "Points nécessaires en section haute pour déclencher le bonus de 35.",
+        "en": "Upper-section points required to trigger the 35-point bonus."
+      },
+      "kind": "integerChoice",
+      "values": [63, 60],
+      "default": 63
+    }
+  ],
+
+  "statsProfiles": ["standard", "yams"]
+}

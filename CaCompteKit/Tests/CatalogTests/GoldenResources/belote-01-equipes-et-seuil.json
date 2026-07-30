@@ -1,0 +1,81 @@
+{
+  "goldenId": "belote-01-equipes-et-seuil",
+  "description": "Partie nominale par équipes (Alice+Bob contre Chloé+David). Seuil de fin abaissé à 300 pour un golden court. Donne 0 : l'équipe A prend et réussit (90 > 81), le complément (72) revient à B. Donne 1 : l'équipe B prend et chute (70 ≤ 81), la défense (A) encaisse 162 à plat — vérifie que le comput s'écarte du complément proportionnel dans ce cas précis. Donne 2 : l'équipe A prend, réussit, et bénéficie de belote-rebelote (+20) ; l'équipe A franchit alors le seuil (372 ≥ 300), ce qui arrête la partie. Vérifie aussi que les deux coéquipiers d'une même équipe reçoivent toujours un score identique (« doubled » ici signale simplement rawValue ≠ computedValue, pas un doublement Skyjo).",
+  "gameId": "belote",
+  "rulesVersion": 1,
+
+  "variants": { "threshold": 300 },
+
+  "participants": [
+    { "id": "p1", "name": "Alice", "seatIndex": 0, "teamID": "A" },
+    { "id": "p2", "name": "Bob", "seatIndex": 1, "teamID": "A" },
+    { "id": "p3", "name": "Chloé", "seatIndex": 2, "teamID": "B" },
+    { "id": "p4", "name": "David", "seatIndex": 3, "teamID": "B" }
+  ],
+
+  "rounds": [
+    {
+      "index": 0,
+      "inputs": [
+        { "participant": "p1", "rawValue": 90, "modifiers": ["isTaker"] },
+        { "participant": "p3", "rawValue": 72, "modifiers": [] }
+      ]
+    },
+    {
+      "index": 1,
+      "inputs": [
+        { "participant": "p3", "rawValue": 70, "modifiers": ["isTaker"] },
+        { "participant": "p1", "rawValue": 92, "modifiers": [] }
+      ]
+    },
+    {
+      "index": 2,
+      "inputs": [
+        { "participant": "p1", "rawValue": 100, "modifiers": ["isTaker", "beloteRebelote"] },
+        { "participant": "p3", "rawValue": 62, "modifiers": [] }
+      ]
+    }
+  ],
+
+  "expected": {
+    "roundResults": [
+      {
+        "index": 0,
+        "comment": "A prend et réussit (90 > 81) : A garde 90, B reçoit le complément 72.",
+        "computed": { "p1": 90, "p2": 90, "p3": 72, "p4": 72 },
+        "cumulative": { "p1": 90, "p2": 90, "p3": 72, "p4": 72 },
+        "doubled": [],
+        "status": "inProgress"
+      },
+      {
+        "index": 1,
+        "comment": "B prend et chute (70 ≤ 81) : B tombe à 0, A (défense) encaisse 162 à plat — ni l'un ni l'autre n'égale son rawValue d'origine.",
+        "computed": { "p1": 162, "p2": 162, "p3": 0, "p4": 0 },
+        "cumulative": { "p1": 252, "p2": 252, "p3": 72, "p4": 72 },
+        "doubled": ["p1", "p2", "p3", "p4"],
+        "status": "inProgress"
+      },
+      {
+        "index": 2,
+        "comment": "A prend et réussit (100 > 81) avec belote-rebelote (+20) : A marque 120 ; B reçoit le complément 62 sans bonus. A franchit 300 (372) : la partie s'arrête.",
+        "computed": { "p1": 120, "p2": 120, "p3": 62, "p4": 62 },
+        "cumulative": { "p1": 372, "p2": 372, "p3": 134, "p4": 134 },
+        "doubled": ["p1", "p2"],
+        "status": "ended"
+      }
+    ],
+
+    "final": {
+      "status": "ended",
+      "reason": "scoreThreshold",
+      "standings": [
+        { "participant": "p1", "rank": 1, "score": 372, "sharedWith": ["p2"] },
+        { "participant": "p2", "rank": 1, "score": 372, "sharedWith": ["p1"] },
+        { "participant": "p3", "rank": 3, "score": 134, "sharedWith": ["p4"] },
+        { "participant": "p4", "rank": 3, "score": 134, "sharedWith": ["p3"] }
+      ]
+    },
+
+    "insights": []
+  }
+}

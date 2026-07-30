@@ -1,0 +1,42 @@
+{
+  "id": "rummikub",
+  "specVersion": 1,
+  "rulesVersion": 1,
+
+  "name": { "fr": "Rummikub", "en": "Rummikub" },
+  "shortDescription": {
+    "fr": "Le premier à poser toutes ses tuiles marque la valeur des tuiles restantes des autres ; chacun des autres perd la valeur de ses propres tuiles. Le plus haut score cumulé gagne.",
+    "en": "Whoever plays all their tiles first scores the value of everyone else's remaining tiles; everyone else loses the value of their own. Highest cumulative score wins."
+  },
+
+  "symbol": "square.stack.3d.up.fill",
+  "paletteID": "ink",
+
+  "players": { "min": 2, "max": 6, "recommended": [3, 4] },
+
+  "scoring": {
+    "direction": "highestWins",
+    "aggregation": "cumulative",
+    "roundLabel": { "fr": "Manche", "en": "Round" },
+    "entry": {
+      "kind": "integer",
+      "allowsNegative": true
+    },
+    "modifiers": []
+  },
+
+  "engine": "generic.sum.v1",
+
+  "end": {
+    "conditions": [
+      {
+        "type": "manualStop",
+        "scope": "anyPlayer"
+      }
+    ]
+  },
+
+  "tieBreak": ["shared"],
+
+  "statsProfiles": ["standard"]
+}

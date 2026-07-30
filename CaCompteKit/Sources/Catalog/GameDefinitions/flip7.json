@@ -1,0 +1,57 @@
+{
+  "id": "flip7",
+  "specVersion": 1,
+  "rulesVersion": 1,
+
+  "name": { "fr": "Flip 7", "en": "Flip 7" },
+  "shortDescription": {
+    "fr": "Cumulez des cartes sans tirer de doublon. Une manche ratée vaut 0. La partie s'arrête dès qu'un joueur atteint 200.",
+    "en": "Collect cards without busting on a duplicate. A busted round scores 0. The game ends once a player reaches 200."
+  },
+
+  "symbol": "7.circle.fill",
+  "paletteID": "magenta",
+
+  "players": { "min": 2, "max": 12, "recommended": [3, 4, 5, 6] },
+
+  "scoring": {
+    "direction": "highestWins",
+    "aggregation": "cumulative",
+    "roundLabel": { "fr": "Manche", "en": "Round" },
+    "entry": {
+      "kind": "integer",
+      "min": 0,
+      "allowsNegative": false
+    },
+    "modifiers": []
+  },
+
+  "engine": "generic.sum.v1",
+
+  "end": {
+    "conditions": [
+      {
+        "type": "scoreThreshold",
+        "value": 200,
+        "variantKey": "threshold",
+        "comparison": ">=",
+        "scope": "anyPlayer",
+        "completeRound": true
+      }
+    ]
+  },
+
+  "tieBreak": ["shared"],
+
+  "variants": [
+    {
+      "id": "threshold",
+      "label": { "fr": "Fin de partie à", "en": "Game ends at" },
+      "kind": "integerChoice",
+      "values": [150, 200, 250],
+      "default": 200
+    }
+  ],
+
+  "statsProfiles": ["standard"]
+}

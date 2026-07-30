@@ -1,0 +1,77 @@
+{
+  "goldenId": "trivial-pursuit-01-seuil-6",
+  "description": "Partie nominale à 2 joueurs. La progression suit les camemberts gagnés (0 à 6) plutôt qu'un score classique. Alice atteint exactement 6 (limite >=) à la manche 2, ce qui arrête la partie.",
+  "gameId": "trivial-pursuit",
+  "rulesVersion": 1,
+
+  "variants": {},
+
+  "participants": [
+    { "id": "p1", "name": "Alice", "seatIndex": 0 },
+    { "id": "p2", "name": "Bob", "seatIndex": 1 }
+  ],
+
+  "rounds": [
+    {
+      "index": 0,
+      "inputs": [
+        { "participant": "p1", "rawValue": 2, "modifiers": [] },
+        { "participant": "p2", "rawValue": 1, "modifiers": [] }
+      ]
+    },
+    {
+      "index": 1,
+      "inputs": [
+        { "participant": "p1", "rawValue": 2, "modifiers": [] },
+        { "participant": "p2", "rawValue": 2, "modifiers": [] }
+      ]
+    },
+    {
+      "index": 2,
+      "inputs": [
+        { "participant": "p1", "rawValue": 2, "modifiers": [] },
+        { "participant": "p2", "rawValue": 1, "modifiers": [] }
+      ]
+    }
+  ],
+
+  "expected": {
+    "roundResults": [
+      {
+        "index": 0,
+        "computed": { "p1": 2, "p2": 1 },
+        "cumulative": { "p1": 2, "p2": 1 },
+        "doubled": [],
+        "status": "inProgress"
+      },
+      {
+        "index": 1,
+        "computed": { "p1": 2, "p2": 2 },
+        "cumulative": { "p1": 4, "p2": 3 },
+        "doubled": [],
+        "status": "inProgress"
+      },
+      {
+        "index": 2,
+        "comment": "Alice atteint exactement 6 : la comparaison >= déclenche la fin sur l'égalité stricte.",
+        "computed": { "p1": 2, "p2": 1 },
+        "cumulative": { "p1": 6, "p2": 4 },
+        "doubled": [],
+        "status": "ended"
+      }
+    ],
+
+    "final": {
+      "status": "ended",
+      "reason": "scoreThreshold",
+      "standings": [
+        { "participant": "p1", "rank": 1, "score": 6 },
+        { "participant": "p2", "rank": 2, "score": 4 }
+      ]
+    },
+
+    "insights": [
+      { "id": "finalGap", "value": 2 }
+    ]
+  }
+}

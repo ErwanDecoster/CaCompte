@@ -1,0 +1,47 @@
+{
+  "id": "trivial-pursuit",
+  "specVersion": 1,
+  "rulesVersion": 1,
+
+  "name": { "fr": "Trivial Pursuit", "en": "Trivial Pursuit" },
+  "shortDescription": {
+    "fr": "Suivez la progression en camemberts gagnés (0 à 6) plutôt qu'un score classique. Premier à 6 (et à répondre à la question finale) gagne.",
+    "en": "Track progress by wedges won (0 to 6) rather than a classic score. First to 6 (and to answer the final question) wins."
+  },
+
+  "symbol": "questionmark.circle.fill",
+  "paletteID": "emeraude",
+
+  "players": { "min": 2, "max": 6, "recommended": [2, 4, 6] },
+
+  "scoring": {
+    "direction": "highestWins",
+    "aggregation": "cumulative",
+    "roundLabel": { "fr": "Tour", "en": "Turn" },
+    "entry": {
+      "kind": "integer",
+      "min": 0,
+      "max": 6,
+      "allowsNegative": false
+    },
+    "modifiers": []
+  },
+
+  "engine": "generic.sum.v1",
+
+  "end": {
+    "conditions": [
+      {
+        "type": "scoreThreshold",
+        "value": 6,
+        "comparison": ">=",
+        "scope": "anyPlayer",
+        "completeRound": true
+      }
+    ]
+  },
+
+  "tieBreak": ["shared"],
+
+  "statsProfiles": ["standard"]
+}

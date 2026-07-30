@@ -1,0 +1,52 @@
+{
+  "goldenId": "qwixx-01-fin-manuelle",
+  "description": "Une feuille par joueur, remplie pendant la partie physique : ce golden vérifie seulement la saisie du score final lu sur la grille (barème triangulaire déjà imprimé dessus). `manualStop` n'est jamais détecté automatiquement, comme `jeu-libre-01-fin-manuelle`.",
+  "gameId": "qwixx",
+  "rulesVersion": 1,
+
+  "variants": {},
+
+  "participants": [
+    { "id": "p1", "name": "Alice", "seatIndex": 0 },
+    { "id": "p2", "name": "Bob", "seatIndex": 1 },
+    { "id": "p3", "name": "Chloé", "seatIndex": 2 }
+  ],
+
+  "rounds": [
+    {
+      "index": 0,
+      "inputs": [
+        { "participant": "p1", "rawValue": 74, "modifiers": [] },
+        { "participant": "p2", "rawValue": 61, "modifiers": [] },
+        { "participant": "p3", "rawValue": 88, "modifiers": [] }
+      ]
+    }
+  ],
+
+  "expected": {
+    "roundResults": [
+      {
+        "index": 0,
+        "comment": "manualStop n'est jamais détecté automatiquement : le statut reste 'inProgress'.",
+        "computed": { "p1": 74, "p2": 61, "p3": 88 },
+        "cumulative": { "p1": 74, "p2": 61, "p3": 88 },
+        "doubled": [],
+        "status": "inProgress"
+      }
+    ],
+
+    "final": {
+      "status": "inProgress",
+      "reason": null,
+      "standings": [
+        { "participant": "p3", "rank": 1, "score": 88 },
+        { "participant": "p1", "rank": 2, "score": 74 },
+        { "participant": "p2", "rank": 3, "score": 61 }
+      ]
+    },
+
+    "insights": [
+      { "id": "finalGap", "value": 14 }
+    ]
+  }
+}

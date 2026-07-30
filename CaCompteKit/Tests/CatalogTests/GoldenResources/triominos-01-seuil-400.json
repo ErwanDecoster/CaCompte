@@ -1,0 +1,82 @@
+{
+  "goldenId": "triominos-01-seuil-400",
+  "description": "Partie nominale à 3 joueurs, score le plus haut gagne. Alice atteint exactement 400 (limite >=) à la manche 2, ce qui arrête la partie.",
+  "gameId": "triominos",
+  "rulesVersion": 1,
+
+  "variants": { "threshold": 400 },
+
+  "participants": [
+    { "id": "p1", "name": "Alice", "seatIndex": 0 },
+    { "id": "p2", "name": "Bob", "seatIndex": 1 },
+    { "id": "p3", "name": "Chloé", "seatIndex": 2 }
+  ],
+
+  "rounds": [
+    {
+      "index": 0,
+      "inputs": [
+        { "participant": "p1", "rawValue": 120, "modifiers": [] },
+        { "participant": "p2", "rawValue": 90, "modifiers": [] },
+        { "participant": "p3", "rawValue": 100, "modifiers": [] }
+      ]
+    },
+    {
+      "index": 1,
+      "inputs": [
+        { "participant": "p1", "rawValue": 150, "modifiers": [] },
+        { "participant": "p2", "rawValue": 130, "modifiers": [] },
+        { "participant": "p3", "rawValue": 110, "modifiers": [] }
+      ]
+    },
+    {
+      "index": 2,
+      "inputs": [
+        { "participant": "p1", "rawValue": 130, "modifiers": [] },
+        { "participant": "p2", "rawValue": 90, "modifiers": [] },
+        { "participant": "p3", "rawValue": 95, "modifiers": [] }
+      ]
+    }
+  ],
+
+  "expected": {
+    "roundResults": [
+      {
+        "index": 0,
+        "computed": { "p1": 120, "p2": 90, "p3": 100 },
+        "cumulative": { "p1": 120, "p2": 90, "p3": 100 },
+        "doubled": [],
+        "status": "inProgress"
+      },
+      {
+        "index": 1,
+        "computed": { "p1": 150, "p2": 130, "p3": 110 },
+        "cumulative": { "p1": 270, "p2": 220, "p3": 210 },
+        "doubled": [],
+        "status": "inProgress"
+      },
+      {
+        "index": 2,
+        "comment": "Alice atteint exactement 400 : la comparaison >= déclenche la fin sur l'égalité stricte.",
+        "computed": { "p1": 130, "p2": 90, "p3": 95 },
+        "cumulative": { "p1": 400, "p2": 310, "p3": 305 },
+        "doubled": [],
+        "status": "ended"
+      }
+    ],
+
+    "final": {
+      "status": "ended",
+      "reason": "scoreThreshold",
+      "standings": [
+        { "participant": "p1", "rank": 1, "score": 400 },
+        { "participant": "p2", "rank": 2, "score": 310 },
+        { "participant": "p3", "rank": 3, "score": 305 }
+      ]
+    },
+
+    "insights": [
+      { "id": "finalGap", "value": 90 }
+    ]
+  }
+}
