@@ -43,6 +43,8 @@
 			</array>
 		</dict>
 	</array>
+	<key>NSSupportsLiveActivities</key>
+	<true/>
 	<key>NSUserActivityTypes</key>
 	<array>
 		<string>com.cacompte.app.continueMatch</string>

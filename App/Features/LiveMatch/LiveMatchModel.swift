@@ -11,7 +11,10 @@ import Sync
 @MainActor
 @Observable
 final class LiveMatchModel {
-    private(set) var state: MatchState
+    private(set) var state: MatchState {
+        didSet { MatchLiveActivityController.refresh(definition: definition, rules: rules, state: state) }
+    }
+
     private(set) var pendingScores: [Participant.ID: Int] = [:]
     var closedParticipantID: Participant.ID?
     private(set) var activeSeatIndex: Int = 0
@@ -48,6 +51,7 @@ final class LiveMatchModel {
         self.definition = try catalog.definition(for: match.gameID, version: match.rulesVersion)
         self.rules = try catalog.rules(for: match.gameID, version: match.rulesVersion)
         self.state = try repository.loadState(match, catalog: catalog)
+        MatchLiveActivityController.refresh(definition: definition, rules: rules, state: state)
     }
 
     var participants: [Participant] {

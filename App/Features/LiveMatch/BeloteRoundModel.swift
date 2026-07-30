@@ -9,7 +9,10 @@ import SwiftData
 @MainActor
 @Observable
 final class BeloteRoundModel {
-    private(set) var state: MatchState
+    private(set) var state: MatchState {
+        didSet { MatchLiveActivityController.refresh(definition: definition, rules: rules, state: state) }
+    }
+
     private(set) var validationErrorMessage: String?
 
     var takerTeamID: String
@@ -32,6 +35,7 @@ final class BeloteRoundModel {
         let loadedState = try repository.loadState(match, catalog: catalog)
         self.state = loadedState
         self.takerTeamID = Self.teamIDs(in: loadedState).first ?? "A"
+        MatchLiveActivityController.refresh(definition: definition, rules: rules, state: state)
     }
 
     /// Équipes triées, chacune avec ses membres dans l'ordre des sièges.

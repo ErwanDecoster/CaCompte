@@ -5,5 +5,6 @@ import SwiftUI
 struct CaCompteWidgetBundle: WidgetBundle {
     var body: some Widget {
         MatchWidget()
+        MatchLiveActivityWidget()
     }
 }

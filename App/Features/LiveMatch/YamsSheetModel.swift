@@ -11,7 +11,10 @@ import SwiftData
 @MainActor
 @Observable
 final class YamsSheetModel {
-    private(set) var state: MatchState
+    private(set) var state: MatchState {
+        didSet { MatchLiveActivityController.refresh(definition: definition, rules: rules, state: state) }
+    }
+
     private(set) var validationErrorMessage: String?
 
     let definition: GameDefinition
@@ -27,6 +30,7 @@ final class YamsSheetModel {
         self.definition = try catalog.definition(for: match.gameID, version: match.rulesVersion)
         self.rules = try catalog.rules(for: match.gameID, version: match.rulesVersion)
         self.state = try repository.loadState(match, catalog: catalog)
+        MatchLiveActivityController.refresh(definition: definition, rules: rules, state: state)
     }
 
     var participants: [Participant] {
