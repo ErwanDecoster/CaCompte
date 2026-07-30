@@ -82,11 +82,20 @@ final class SharedMatchModel {
 
     /// Départ volontaire de l'écran : prévient l'hôte et ferme la connexion (`LiveSession.leave`)
     /// avant d'arrêter d'écouter — sans cet ordre, l'hôte continuerait de nous lister comme
-    /// connecté (même bug que `LiveMatchModel.stopSharing`, côté pair cette fois).
+    /// connecté (même bug que `LiveMatchModel.stopSharing`, côté pair cette fois). Termine aussi
+    /// la Live Activity : contrairement à `closeConnection()`, ceci veut dire « je ne suis plus
+    /// cette partie », pas « je change juste de transport ».
     func stop() async {
         if let matchID = state?.matchID {
             MatchLiveActivityController.stopTracking(matchID: matchID)
         }
+        await closeConnection()
+    }
+
+    /// Doc utilisateur P9 — ferme la connexion transport sans toucher à la Live Activity : utilisé
+    /// lors du basculement Wi-Fi → Bluetooth au passage en arrière-plan (`JoinMatchView`), où
+    /// l'utilisateur n'a pas quitté la partie, seul le chemin réseau change.
+    func closeConnection() async {
         await session.leave()
         for task in tasks { task.cancel() }
         tasks = []

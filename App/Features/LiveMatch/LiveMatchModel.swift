@@ -33,6 +33,11 @@ final class LiveMatchModel {
     private(set) var connectedPeers: [LiveSession.ConnectedPeer] = []
     private var session: LiveSession?
     private var transport: WifiTransport?
+    /// Doc utilisateur P9 — annoncée en plus du Wi-Fi pendant toute la session de partage, pas
+    /// seulement en secours de découverte (doc 09/ADR-0014 d'origine) : un pair déjà connecté qui
+    /// bascule sur Bluetooth au passage en arrière-plan (`JoinMatchView`, connexion Wi-Fi qui
+    /// meurt sans entitlement réseau en tâche de fond) a besoin de nous trouver là aussi.
+    private var bleTransport: BLETransport?
     private var sharingTasks: [Task<Void, Never>] = []
 
     /// Doc utilisateur : sans ça, une manche saisie par un contributeur distant se contente de
@@ -198,12 +203,25 @@ final class LiveMatchModel {
         let newTransport = WifiTransport(deviceName: deviceName)
         try await newTransport.advertise(matchID: state.matchID, gameID: match.gameID, participantCount: participants.count)
 
+        // Doc utilisateur P9 — best-effort : le Wi-Fi ci-dessus est le chemin testé et déjà
+        // confirmé au moment où on arrive ici, l'échec du Bluetooth (désactivé, non autorisé) ne
+        // doit pas empêcher le partage de démarrer.
+        let newBLETransport = BLETransport(deviceName: deviceName)
+        try? await newBLETransport.advertise(matchID: state.matchID, gameID: match.gameID, participantCount: participants.count)
+
         session = newSession
         transport = newTransport
+        bleTransport = newBLETransport
         pairingCode = code
 
         let acceptTask = Task { [weak self] in
             for await incoming in newTransport.acceptIncoming() {
+                guard self != nil else { return }
+                await newSession.acceptConnection(incoming)
+            }
+        }
+        let bleAcceptTask = Task { [weak self] in
+            for await incoming in newBLETransport.acceptIncoming() {
                 guard self != nil else { return }
                 await newSession.acceptConnection(incoming)
             }
@@ -222,7 +240,7 @@ final class LiveMatchModel {
                 self?.connectedPeers = peers
             }
         }
-        sharingTasks = [acceptTask, eventsTask, peersTask]
+        sharingTasks = [acceptTask, bleAcceptTask, eventsTask, peersTask]
     }
 
     /// Doc utilisateur P9 — s'applique aux prochaines connexions, pas aux contributeurs déjà
@@ -240,6 +258,8 @@ final class LiveMatchModel {
         sharingTasks = []
         await transport?.stopAdvertising()
         transport = nil
+        await bleTransport?.stopAdvertising()
+        bleTransport = nil
         session = nil
         pairingCode = nil
         connectedPeers = []

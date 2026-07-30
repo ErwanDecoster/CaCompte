@@ -14,7 +14,14 @@ struct JoinMatchView: View {
     let catalog: GameCatalog
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.scenePhase) private var scenePhase
     @State private var transport = WifiTransport(deviceName: UIDevice.current.name)
+    /// Doc utilisateur P9 — secours de `transport` : découverte/reconnexion (`reconnect()`) et
+    /// bascule automatique au passage en arrière-plan (`beginBLEHandoverIfNeeded()`). L'hôte
+    /// annonce en Bluetooth en plus du Wi-Fi pendant toute la session de partage
+    /// (`LiveMatchModel.startSharing`), donc toujours joignable ici.
+    @State private var bleTransport = BLETransport(deviceName: UIDevice.current.name)
+    @State private var backgroundTaskID: UIBackgroundTaskIdentifier = .invalid
     @State private var discoveredHosts: [DiscoveredHost] = []
     @State private var hostAwaitingCode: DiscoveredHost?
     @State private var pairingCode = ""
@@ -83,6 +90,11 @@ struct JoinMatchView: View {
         }
         .onDisappear {
             discoveryTask?.cancel()
+        }
+        .onChange(of: scenePhase) { _, newPhase in
+            if newPhase == .background {
+                beginBLEHandoverIfNeeded()
+            }
         }
         .sheet(item: $hostAwaitingCode) { host in
             pairingSheet(for: host)
@@ -218,7 +230,7 @@ struct JoinMatchView: View {
         isConnecting = true
         connectionError = nil
         do {
-            try await establishConnection(to: host)
+            try await establishConnection(via: transport, to: host)
             hostAwaitingCode = nil
         } catch {
             connectionError = Self.describe(error)
@@ -227,24 +239,30 @@ struct JoinMatchView: View {
     }
 
     /// Doc utilisateur — reprise après une connexion perdue (app en arrière-plan, coupure
-    /// réseau…) : relance une découverte courte ciblée sur le même id de partie plutôt que de
-    /// réutiliser `DiscoveredHost` tel quel (l'enregistrement Bonjour peut avoir expiré depuis),
-    /// puis rejoue le même appairage — le code et le rôle demandé sont encore là, `SharedMatchView`
-    /// a juste besoin d'un nouveau `SharedMatchModel` une fois la connexion rétablie.
+    /// réseau…). Wi-Fi d'abord (le chemin habituel), Bluetooth ensuite si l'hôte reste
+    /// introuvable — orchestration documentée depuis la doc 09/ADR-0014, jamais écrite jusqu'ici.
+    /// Relance une découverte courte ciblée sur le même id de partie plutôt que de réutiliser
+    /// `DiscoveredHost` tel quel (l'enregistrement peut avoir expiré depuis) ; le code et le rôle
+    /// demandé sont encore là, `SharedMatchView` a juste besoin d'un nouveau `SharedMatchModel`
+    /// une fois la connexion rétablie.
     private func reconnect() async {
         guard let matchID = connectedMatchID else { return }
-        var found: DiscoveredHost?
-        for await host in transport.discover(timeout: .seconds(10)) {
-            if host.id == matchID {
-                found = host
-                break
-            }
+        if let host = await discoverHost(via: transport, matchID: matchID, timeout: .seconds(8)) {
+            if (try? await establishConnection(via: transport, to: host)) != nil { return }
         }
-        guard let host = found else { return }
-        try? await establishConnection(to: host)
+        if let host = await discoverHost(via: bleTransport, matchID: matchID, timeout: .seconds(10)) {
+            try? await establishConnection(via: bleTransport, to: host)
+        }
     }
 
-    private func establishConnection(to host: DiscoveredHost) async throws {
+    private func discoverHost(via transport: any Transport, matchID: UUID, timeout: Duration) async -> DiscoveredHost? {
+        for await host in transport.discover(timeout: timeout) where host.id == matchID {
+            return host
+        }
+        return nil
+    }
+
+    private func establishConnection(via transport: any Transport, to host: DiscoveredHost) async throws {
         let transportSession = try await transport.connect(to: host)
         let liveSession = LiveSession(deviceID: DeviceIdentity.current, catalog: catalog)
         try await liveSession.attachToHost(
@@ -262,6 +280,48 @@ struct JoinMatchView: View {
         let assignedRole = await liveSession.currentRole()
         sharedModel = SharedMatchModel(session: liveSession, role: assignedRole, catalog: catalog)
         connectedMatchID = host.id
+    }
+
+    /// Doc utilisateur — remontée : au passage en arrière-plan, la connexion Wi-Fi meurt (pas
+    /// d'entitlement réseau en tâche de fond) et l'écran verrouillé du pair se fige sans le dire.
+    /// Le Bluetooth bénéficie d'un vrai mode d'arrière-plan (`bluetooth-central`, Info.plist) : on
+    /// bascule dessus dans la fenêtre de grâce que `beginBackgroundTask` obtient avant que l'app ne
+    /// soit vraiment suspendue (de l'ordre de 30 s).
+    private func beginBLEHandoverIfNeeded() {
+        guard sharedModel != nil, let matchID = connectedMatchID, backgroundTaskID == .invalid else { return }
+        backgroundTaskID = UIApplication.shared.beginBackgroundTask(withName: "cacompte.ble-handover") {
+            Task { @MainActor in endBackgroundTaskIfNeeded() }
+        }
+        guard backgroundTaskID != .invalid else { return }
+        Task {
+            // Doc utilisateur : un aller-retour très bref (notification vérifiée puis retour) ne
+            // justifie pas de perturber une connexion Wi-Fi qui a de bonnes chances de survivre —
+            // seul un passage en arrière-plan qui dure déclenche le basculement.
+            try? await Task.sleep(for: .seconds(3))
+            if UIApplication.shared.applicationState == .background {
+                await performBLEHandover(matchID: matchID)
+            }
+            endBackgroundTaskIfNeeded()
+        }
+    }
+
+    private func performBLEHandover(matchID: UUID) async {
+        guard let host = await discoverHost(via: bleTransport, matchID: matchID, timeout: .seconds(8)) else { return }
+        guard !Task.isCancelled else { return }
+        let previousModel = sharedModel
+        // Doc utilisateur : si le basculement échoue (Bluetooth désactivé, hôte hors de
+        // portée…), on retombe sur le comportement déjà géré — `isHostConnected` passe à `false`
+        // via `hostLeft`, reconnexion manuelle possible au retour au premier plan. Le Wi-Fi
+        // allait de toute façon mourir en arrière-plan, rien n'est perdu à essayer.
+        if (try? await establishConnection(via: bleTransport, to: host)) != nil {
+            await previousModel?.closeConnection()
+        }
+    }
+
+    private func endBackgroundTaskIfNeeded() {
+        guard backgroundTaskID != .invalid else { return }
+        UIApplication.shared.endBackgroundTask(backgroundTaskID)
+        backgroundTaskID = .invalid
     }
 
     /// Distingue l'échec de connexion (réseau, hôte introuvable) de l'absence de réponse
