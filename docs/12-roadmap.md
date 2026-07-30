@@ -155,11 +155,23 @@ iPhone ↔ iPad atteint ; BLE écrit mais pas vérifié ni branché ; Android re
 
 ## P9 — Finitions & TestFlight · 2,5 semaines
 
-- Widget, App Intents / Siri, Live Activity, Handoff
-- Passe d'accessibilité complète : VoiceOver, AX5, Reduce Motion, contraste augmenté
-- Localisation anglaise complète et relecture
-- Fiche App Store, captures, confidentialité (« aucune donnée collectée »)
-- TestFlight interne, puis externe, correction des retours
+- ✅ Handoff (`MatchContinuation`, `NSUserActivity` sur `MatchPlayView`) — reprise d'une partie en
+  cours sur un autre appareil au même compte iCloud
+- ✅ App Intents / Siri (`MatchShortcuts`) — « Reprends ma partie », « Commence une partie de… »
+  (`GameEntity`/`GameEntityQuery`), exposées via `AppShortcutsProvider`
+- ✅ Widget (cible `CaCompteWidgetExtension`) — classement de la partie en cours sur l'écran
+  d'accueil, store partagé via App Group (`SharedStore`), republié quand l'app repasse en
+  arrière-plan plutôt que sur un minuteur
+- ✅ Live Activity (`MatchActivityAttributes` dans `Domain`, `MatchLiveActivityController`) — écran
+  verrouillé et Dynamic Island, mis à jour à chaque manche depuis les trois écrans de saisie
+- 🔶 Les quatre ci-dessus sont vérifiés par build complet + lancement simulateur ; le rendu réel
+  (Widget sur l'écran d'accueil, Dynamic Island, Handoff entre deux appareils, Siri) reste à
+  valider par l'auteur sur appareil physique — voir doc [09](09-partie-partagee.md) pour le même
+  principe appliqué au Wi-Fi/BLE
+- ⏳ Passe d'accessibilité complète : VoiceOver, AX5, Reduce Motion, contraste augmenté
+- ⏳ Localisation anglaise complète et relecture
+- ⏳ Fiche App Store, captures, confidentialité (« aucune donnée collectée »)
+- ⏳ TestFlight interne, puis externe, correction des retours
 
 **Fini quand** : la check-list « définition de terminé » de [10](10-tests-et-qualite.md) passe
 sur tous les écrans.
