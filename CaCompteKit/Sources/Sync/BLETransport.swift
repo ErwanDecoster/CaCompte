@@ -204,9 +204,24 @@ final class BLEPeripheralDelegate: NSObject, CBPeripheralManagerDelegate, @unche
         }
     }
 
+    /// Doc utilisateur P9 — remontée (recette physique, pair disparu des « appareils connectés »
+    /// après quelques manches, reconnexion sans effet) : `CBPeripheralManager` n'a pas
+    /// d'équivalent fiable de « ce central s'est déconnecté » — seul `didUnsubscribeFrom`
+    /// (désabonnement propre) le signale, qui n'arrive jamais si le pair a été suspendu
+    /// abruptement (cas courant en arrière-plan). Si iOS réutilise la même identité `CBCentral`
+    /// pour l'appareil qui se reconnecte (plausible, pas garanti), `session(for:)` retrouvait
+    /// alors l'ancienne session — jamais marquée fermée — et `onSessionAccepted` la republiait
+    /// telle quelle : deux `LiveSession.listenToPeer` pouvaient alors écouter le même flux
+    /// `incoming`, qui ne distribue chaque message qu'à un seul consommateur (pas de diffusion),
+    /// corrompant silencieusement la répartition. Une resouscription remplace donc désormais
+    /// toujours la session existante plutôt que de la réutiliser.
     func peripheralManager(_ peripheral: CBPeripheralManager, central: CBCentral, didSubscribeTo characteristic: CBCharacteristic) {
         guard characteristic.uuid == BLETransport.notifyCharUUID else { return }
-        onSessionAccepted(session(for: central))
+        let key = ObjectIdentifier(central)
+        sessionsByCentral[key]?.markClosed()
+        let session = BLEPeripheralSession(central: central, manager: manager, notifyChar: notifyChar)
+        sessionsByCentral[key] = session
+        onSessionAccepted(session)
     }
 
     func peripheralManager(_ peripheral: CBPeripheralManager, central: CBCentral, didUnsubscribeFrom characteristic: CBCharacteristic) {
