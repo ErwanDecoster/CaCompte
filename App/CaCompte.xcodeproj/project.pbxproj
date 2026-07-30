@@ -8,16 +8,20 @@
 
 /* Begin PBXBuildFile section */
 		032C564DC8A0F3D4D62BC798 /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96207CDBA3609DE06C4239DF /* ProfileView.swift */; };
+		135A1F85FA0C44DBBDCA3C28 /* MatchShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6A7FA038D13457691C09E07 /* MatchShortcuts.swift */; };
 		163489A6E89B817A87D107A0 /* MatchPlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25AA1BD3EAD4A3DC5B516CC7 /* MatchPlayView.swift */; };
+		188202D3EB10D2CD01A3BC5C /* CaCompteWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C2581102A3F3BC41B60D067 /* CaCompteWidgetBundle.swift */; };
 		1A4A5AF525AF7E3744290706 /* ParticipantRecord+Avatar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 437E55AE4133903D59398F69 /* ParticipantRecord+Avatar.swift */; };
 		227E4860995218D9A9105300 /* GamesTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EFB7CD056077D671ED76AF9 /* GamesTabView.swift */; };
 		23BC6769A3DEA226BAAC6BA9 /* MatchSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F22BB7F6F50FBAC4AD75FF39 /* MatchSetupView.swift */; };
 		34DA3F2811B551DE7804DAA3 /* Domain in Frameworks */ = {isa = PBXBuildFile; productRef = B55D3B84D88AC66AE349B7FA /* Domain */; };
 		399BEAEE80010D1CAE1085DA /* SharedMatchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A9F5EDAC041F9E23EED5B5D /* SharedMatchView.swift */; };
 		3F3546CAAB8E926419CC8851 /* LiveMatchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A7326A3B54C2A7022BFF31D /* LiveMatchView.swift */; };
+		44387B906D7D533A7BC3DE2C /* MatchWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5423929B035410EC56001A4 /* MatchWidget.swift */; };
 		449D14BD722EA2711E98EFEC /* PlayerRecord+Avatar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 995D8274A3CEAA3E755A72E6 /* PlayerRecord+Avatar.swift */; };
 		4A2C78824B135828FE2E5FC6 /* QRScannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E465C66E83BEDE023DDBDBFB /* QRScannerView.swift */; };
 		4A56CC9B8C9F6878EB95DC28 /* HistoryListModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 849F62578BC9685EEC910AC8 /* HistoryListModel.swift */; };
+		509242CF2FF4DB88D1125A94 /* Domain in Frameworks */ = {isa = PBXBuildFile; productRef = 52A42D4B0C5C94DF1D08F8CD /* Domain */; };
 		5F0AAA9466CE0936F3BAA6B1 /* QRCodeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D90C5383931C73460C54F4F3 /* QRCodeView.swift */; };
 		60FC842FC3B1BA12ED6EC82B /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4DC2275071173C4FD737F895 /* SettingsView.swift */; };
 		6389CCBC2E955F0259E97312 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 9BB59FBD1B31E852B0902041 /* Assets.xcassets */; };
@@ -25,6 +29,7 @@
 		7E2DCF48E4B0EF1AFC137EEC /* DesignSystem in Frameworks */ = {isa = PBXBuildFile; productRef = 1C6B054AB4DCB332805D9C75 /* DesignSystem */; };
 		7E89996D555AE0DAB9395FCE /* HistoryListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28E50786A288307CA348EB4C /* HistoryListView.swift */; };
 		84D74211B8E5780DC8B5E153 /* ShareSessionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A4AA12BF22916E17C286D79 /* ShareSessionView.swift */; };
+		859CC59406BE5E3668672C56 /* CaCompteWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = F6F181867B7C700F8A482072 /* CaCompteWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		86FE3227B5C52B9EA27E1603 /* ResultsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EF5EB3CCD9611F48C73CA25 /* ResultsView.swift */; };
 		912EA607857AFA5094D04769 /* Store in Frameworks */ = {isa = PBXBuildFile; productRef = D36CAD810ED43369A90639A4 /* Store */; };
 		9C43D7D16A3F53BA9787B2BF /* Sync in Frameworks */ = {isa = PBXBuildFile; productRef = F740A7CA732186A944BCFB08 /* Sync */; };
@@ -41,26 +46,55 @@
 		BB1F56D622DFABC00CB8B98C /* ResultsShareCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAB3431F9771731267D9EC71 /* ResultsShareCard.swift */; };
 		BD81CB8E6FA7BB85A98599A9 /* PlayerEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F181C9B14E19D6B30064D7E /* PlayerEditorView.swift */; };
 		BE1477E7D8965E3F525C95B7 /* ArchivedPlayersView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACECD00F003F1196DA804A2D /* ArchivedPlayersView.swift */; };
+		BE6BC237E6BEA852D7D6CC60 /* Catalog in Frameworks */ = {isa = PBXBuildFile; productRef = 033073A7339C70DDE2FEF711 /* Catalog */; };
 		C01898AD075E727F39FB5C3F /* BeloteRoundView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EFAAD36FF72BABA0EA7DA7CC /* BeloteRoundView.swift */; };
 		C227FDDBD1C6825CFF496CBA /* AvatarPhotoProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 052D480A99B3CEFE2DC01CC6 /* AvatarPhotoProcessor.swift */; };
 		C3AA6E864D68EC394369D686 /* JoinLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BD054369BC077C799BBFF57 /* JoinLink.swift */; };
 		CC4C14AE1927D962679B0443 /* DeepLinkRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DE229A134D6300341412C0E /* DeepLinkRouter.swift */; };
-		FECF6A04A5074AE19E39062F /* MatchContinuation.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6251C1B9A134F5DA88F87E3 /* MatchContinuation.swift */; };
-		135A1F85FA0C44DBBDCA3C28 /* MatchShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6A7FA038D13457691C09E07 /* MatchShortcuts.swift */; };
 		D99C4416C12863B274B3BD12 /* WiFiAvailability.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACC2C52B613E48E0F72A930D /* WiFiAvailability.swift */; };
 		DDF0CF323C42A6717A2F2536 /* SharedMatchModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED88C4CDA8CFDA746AC9588D /* SharedMatchModel.swift */; };
+		EA83AEE01FBE39E611E4EAA6 /* Store in Frameworks */ = {isa = PBXBuildFile; productRef = 4169DC47B02D4B5A5F243DE9 /* Store */; };
 		F5C748596F7079EDC19CB3DA /* YamsSheetModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = BADA2645FCD7DF45BDBEF1A4 /* YamsSheetModel.swift */; };
+		F90C9C1F96CB125785E4A63B /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 166377630E42779B0C5793ED /* Foundation.framework */; };
+		FECF6A04A5074AE19E39062F /* MatchContinuation.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6251C1B9A134F5DA88F87E3 /* MatchContinuation.swift */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		5CF327D7F748F95AF8101FEA /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 194311EE5894E3937B117456 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = E2AFF0D5BDF162F6150E5E89;
+			remoteInfo = CaCompteWidgetExtension;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		2C8302DC0AB0E1304EB683D5 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				859CC59406BE5E3668672C56 /* CaCompteWidgetExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		052D480A99B3CEFE2DC01CC6 /* AvatarPhotoProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AvatarPhotoProcessor.swift; sourceTree = "<group>"; };
 		0F88BAB91585ED031873F11E /* LiveMatchModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveMatchModel.swift; sourceTree = "<group>"; };
 		105261167430649BF69A491B /* YamsSheetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YamsSheetView.swift; sourceTree = "<group>"; };
+		166377630E42779B0C5793ED /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		25AA1BD3EAD4A3DC5B516CC7 /* MatchPlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MatchPlayView.swift; sourceTree = "<group>"; };
 		2697E16A79242AF14FF10256 /* HistoryDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryDetailView.swift; sourceTree = "<group>"; };
 		28E50786A288307CA348EB4C /* HistoryListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryListView.swift; sourceTree = "<group>"; };
 		2B80A9C2D67A1BF4CDBC859E /* JoinMatchView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = JoinMatchView.swift; sourceTree = "<group>"; };
+		2E3085EAB19FA97E55DB0D70 /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		3BD054369BC077C799BBFF57 /* JoinLink.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = JoinLink.swift; sourceTree = "<group>"; };
+		3C2581102A3F3BC41B60D067 /* CaCompteWidgetBundle.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CaCompteWidgetBundle.swift; sourceTree = "<group>"; };
 		437E55AE4133903D59398F69 /* ParticipantRecord+Avatar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ParticipantRecord+Avatar.swift"; sourceTree = "<group>"; };
 		46DFDD02B82CA2F050740E86 /* PlayerEditorModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerEditorModel.swift; sourceTree = "<group>"; };
 		4A9F5EDAC041F9E23EED5B5D /* SharedMatchView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SharedMatchView.swift; sourceTree = "<group>"; };
@@ -68,13 +102,12 @@
 		4F181C9B14E19D6B30064D7E /* PlayerEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerEditorView.swift; sourceTree = "<group>"; };
 		5EFB7CD056077D671ED76AF9 /* GamesTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GamesTabView.swift; sourceTree = "<group>"; };
 		64408707A5A5A18290837917 /* PlayersListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayersListView.swift; sourceTree = "<group>"; };
+		768FEE4048903956BFB3FB2B /* CaCompteWidget.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = CaCompteWidget.entitlements; sourceTree = "<group>"; };
 		7A4AA12BF22916E17C286D79 /* ShareSessionView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ShareSessionView.swift; sourceTree = "<group>"; };
 		7A7326A3B54C2A7022BFF31D /* LiveMatchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveMatchView.swift; sourceTree = "<group>"; };
 		7EF5EB3CCD9611F48C73CA25 /* ResultsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResultsView.swift; sourceTree = "<group>"; };
 		849F62578BC9685EEC910AC8 /* HistoryListModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryListModel.swift; sourceTree = "<group>"; };
 		8DE229A134D6300341412C0E /* DeepLinkRouter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DeepLinkRouter.swift; sourceTree = "<group>"; };
-		E6251C1B9A134F5DA88F87E3 /* MatchContinuation.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MatchContinuation.swift; sourceTree = "<group>"; };
-		D6A7FA038D13457691C09E07 /* MatchShortcuts.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MatchShortcuts.swift; sourceTree = "<group>"; };
 		8E82C29D2632630F7291EE5F /* CaCompteApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaCompteApp.swift; sourceTree = "<group>"; };
 		96207CDBA3609DE06C4239DF /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
 		995D8274A3CEAA3E755A72E6 /* PlayerRecord+Avatar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PlayerRecord+Avatar.swift"; sourceTree = "<group>"; };
@@ -87,12 +120,16 @@
 		B027CF6BA8617B3C6DF58619 /* CaCompte.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CaCompte.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		BADA2645FCD7DF45BDBEF1A4 /* YamsSheetModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YamsSheetModel.swift; sourceTree = "<group>"; };
 		C15C1F1E2E5C224E80E4373A /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		D6A7FA038D13457691C09E07 /* MatchShortcuts.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MatchShortcuts.swift; sourceTree = "<group>"; };
 		D90C5383931C73460C54F4F3 /* QRCodeView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = QRCodeView.swift; sourceTree = "<group>"; };
 		E33D25510FA11118DE442CB2 /* BeloteRoundModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BeloteRoundModel.swift; sourceTree = "<group>"; };
 		E465C66E83BEDE023DDBDBFB /* QRScannerView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = QRScannerView.swift; sourceTree = "<group>"; };
+		E5423929B035410EC56001A4 /* MatchWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MatchWidget.swift; sourceTree = "<group>"; };
+		E6251C1B9A134F5DA88F87E3 /* MatchContinuation.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MatchContinuation.swift; sourceTree = "<group>"; };
 		ED88C4CDA8CFDA746AC9588D /* SharedMatchModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SharedMatchModel.swift; sourceTree = "<group>"; };
 		EFAAD36FF72BABA0EA7DA7CC /* BeloteRoundView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BeloteRoundView.swift; sourceTree = "<group>"; };
 		F22BB7F6F50FBAC4AD75FF39 /* MatchSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MatchSetupView.swift; sourceTree = "<group>"; };
+		F6F181867B7C700F8A482072 /* CaCompteWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = CaCompteWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		FEC066611F334B03347B64CF /* MatchSetupModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MatchSetupModel.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -106,6 +143,17 @@
 				912EA607857AFA5094D04769 /* Store in Frameworks */,
 				9C43D7D16A3F53BA9787B2BF /* Sync in Frameworks */,
 				7E2DCF48E4B0EF1AFC137EEC /* DesignSystem in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8ACD8A9D920D1BD83E13E4AC /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F90C9C1F96CB125785E4A63B /* Foundation.framework in Frameworks */,
+				509242CF2FF4DB88D1125A94 /* Domain in Frameworks */,
+				BE6BC237E6BEA852D7D6CC60 /* Catalog in Frameworks */,
+				EA83AEE01FBE39E611E4EAA6 /* Store in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -128,6 +176,7 @@
 			isa = PBXGroup;
 			children = (
 				B027CF6BA8617B3C6DF58619 /* CaCompte.app */,
+				F6F181867B7C700F8A482072 /* CaCompteWidgetExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -138,6 +187,18 @@
 				9BB59FBD1B31E852B0902041 /* Assets.xcassets */,
 			);
 			path = Resources;
+			sourceTree = "<group>";
+		};
+		528F4F1174DBC240F83F45EB /* CaCompteWidget */ = {
+			isa = PBXGroup;
+			children = (
+				2E3085EAB19FA97E55DB0D70 /* Info.plist */,
+				768FEE4048903956BFB3FB2B /* CaCompteWidget.entitlements */,
+				3C2581102A3F3BC41B60D067 /* CaCompteWidgetBundle.swift */,
+				E5423929B035410EC56001A4 /* MatchWidget.swift */,
+			);
+			name = CaCompteWidget;
+			path = CaCompteWidget;
 			sourceTree = "<group>";
 		};
 		5709D4F8E4E87CE2401C9692 /* Players */ = {
@@ -159,6 +220,14 @@
 				96207CDBA3609DE06C4239DF /* ProfileView.swift */,
 			);
 			path = Profile;
+			sourceTree = "<group>";
+		};
+		63F385DFADA16903F3B48348 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				C5CBDC52DADA911D1F146190 /* iOS */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 		7D1A2B424726AB6BB42CE00C /* History */ = {
@@ -193,6 +262,7 @@
 				8DE229A134D6300341412C0E /* DeepLinkRouter.swift */,
 				E6251C1B9A134F5DA88F87E3 /* MatchContinuation.swift */,
 				D6A7FA038D13457691C09E07 /* MatchShortcuts.swift */,
+				528F4F1174DBC240F83F45EB /* CaCompteWidget */,
 			);
 			name = "";
 			sourceTree = "<group>";
@@ -230,7 +300,16 @@
 				C15C1F1E2E5C224E80E4373A /* Info.plist */,
 				964DF914D15EE7BD800E0D40 /*  */,
 				209AD8EE9E38991B9AF90342 /* Products */,
+				63F385DFADA16903F3B48348 /* Frameworks */,
 			);
+			sourceTree = "<group>";
+		};
+		C5CBDC52DADA911D1F146190 /* iOS */ = {
+			isa = PBXGroup;
+			children = (
+				166377630E42779B0C5793ED /* Foundation.framework */,
+			);
+			name = iOS;
 			sourceTree = "<group>";
 		};
 		FF107113EE23329E5E56C240 /* Features */ = {
@@ -257,10 +336,12 @@
 				3E152B48243CE7A4FD7C020B /* Sources */,
 				0FADB0769E747CA9472B9F10 /* Frameworks */,
 				BCE913F26B4ED92335FD352A /* Resources */,
+				2C8302DC0AB0E1304EB683D5 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				96075D2E2528F8FC9A4E1671 /* PBXTargetDependency */,
 			);
 			name = CaCompte;
 			packageProductDependencies = (
@@ -273,6 +354,28 @@
 			productName = CaCompte;
 			productReference = B027CF6BA8617B3C6DF58619 /* CaCompte.app */;
 			productType = "com.apple.product-type.application";
+		};
+		E2AFF0D5BDF162F6150E5E89 /* CaCompteWidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 9E6E45B78F8DEB2EA7C75045 /* Build configuration list for PBXNativeTarget "CaCompteWidgetExtension" */;
+			buildPhases = (
+				C6E9B33E4CA454A0F7A3B30E /* Sources */,
+				8ACD8A9D920D1BD83E13E4AC /* Frameworks */,
+				A4E676A14B39C9932304916A /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = CaCompteWidgetExtension;
+			packageProductDependencies = (
+				52A42D4B0C5C94DF1D08F8CD /* Domain */,
+				033073A7339C70DDE2FEF711 /* Catalog */,
+				4169DC47B02D4B5A5F243DE9 /* Store */,
+			);
+			productName = CaCompteWidgetExtension;
+			productReference = F6F181867B7C700F8A482072 /* CaCompteWidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -291,6 +394,10 @@
 								enabled = 1;
 							};
 						};
+					};
+					E2AFF0D5BDF162F6150E5E89 = {
+						CreatedOnToolsVersion = 26.0;
+						ProvisioningStyle = Automatic;
 					};
 				};
 			};
@@ -311,11 +418,19 @@
 			projectRoot = "";
 			targets = (
 				A259F8DC917294226461FCC3 /* CaCompte */,
+				E2AFF0D5BDF162F6150E5E89 /* CaCompteWidgetExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		A4E676A14B39C9932304916A /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		BCE913F26B4ED92335FD352A /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -371,7 +486,25 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		C6E9B33E4CA454A0F7A3B30E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				188202D3EB10D2CD01A3BC5C /* CaCompteWidgetBundle.swift in Sources */,
+				44387B906D7D533A7BC3DE2C /* MatchWidget.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		96075D2E2528F8FC9A4E1671 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = CaCompteWidgetExtension;
+			target = E2AFF0D5BDF162F6150E5E89 /* CaCompteWidgetExtension */;
+			targetProxy = 5CF327D7F748F95AF8101FEA /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		09D3899D409D64BF10E12D7F /* Debug */ = {
@@ -543,6 +676,63 @@
 			};
 			name = Release;
 		};
+		A9012A6BB3E7C85A41A4E871 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_ENTITLEMENTS = CaCompteWidget/CaCompteWidget.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = U79ZYL8WF3;
+				INFOPLIST_FILE = CaCompteWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Ça Compte";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.cacompte.app.widget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_TREAT_WARNINGS_AS_ERRORS = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		BEB0904E3184228DB1B49E44 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_ENTITLEMENTS = CaCompteWidget/CaCompteWidget.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = U79ZYL8WF3;
+				INFOPLIST_FILE = CaCompteWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Ça Compte";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.cacompte.app.widget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_TREAT_WARNINGS_AS_ERRORS = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -551,6 +741,15 @@
 			buildConfigurations = (
 				09D3899D409D64BF10E12D7F /* Debug */,
 				6303DAD2615DBF4E7B782BBF /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		9E6E45B78F8DEB2EA7C75045 /* Build configuration list for PBXNativeTarget "CaCompteWidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BEB0904E3184228DB1B49E44 /* Release */,
+				A9012A6BB3E7C85A41A4E871 /* Debug */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -574,10 +773,25 @@
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		033073A7339C70DDE2FEF711 /* Catalog */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 3EDE9CB3A150C8C1BAE90A21 /* XCLocalSwiftPackageReference "CaCompteKit" */;
+			productName = Catalog;
+		};
 		1C6B054AB4DCB332805D9C75 /* DesignSystem */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 3EDE9CB3A150C8C1BAE90A21 /* XCLocalSwiftPackageReference "CaCompteKit" */;
 			productName = DesignSystem;
+		};
+		4169DC47B02D4B5A5F243DE9 /* Store */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 3EDE9CB3A150C8C1BAE90A21 /* XCLocalSwiftPackageReference "CaCompteKit" */;
+			productName = Store;
+		};
+		52A42D4B0C5C94DF1D08F8CD /* Domain */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 3EDE9CB3A150C8C1BAE90A21 /* XCLocalSwiftPackageReference "CaCompteKit" */;
+			productName = Domain;
 		};
 		B55D3B84D88AC66AE349B7FA /* Domain */ = {
 			isa = XCSwiftPackageProductDependency;

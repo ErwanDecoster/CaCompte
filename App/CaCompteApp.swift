@@ -3,12 +3,14 @@ import Domain
 import Store
 import SwiftData
 import SwiftUI
+import WidgetKit
 
 @main
 struct CaCompteApp: App {
     private let settings = AppSettings()
     private let deepLinkRouter = DeepLinkRouter.shared
     @State private var container: ModelContainer?
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some Scene {
         WindowGroup {
@@ -36,8 +38,23 @@ struct CaCompteApp: App {
             // `cacompte://`, doc 09) : `DeepLinkRouter` fait le pont jusqu'à `GamesTabView`,
             // potentiellement affichée sur un autre onglet au moment où le lien s'ouvre.
             .onOpenURL { url in
+                // Doc utilisateur — Widget (P9) : tap sur la carte de partie en cours
+                // (`cacompte://resume`, posé par `MatchWidgetEntryView.widgetURL`).
+                if url.host == "resume" {
+                    deepLinkRouter.wantsResume = true
+                    return
+                }
                 guard let payload = JoinLink.parse(url) else { return }
                 deepLinkRouter.pendingJoin = payload
+            }
+            // Doc utilisateur — Widget (P9) : un score ne change que sur action explicite d'un
+            // joueur (doc `MatchTimelineProvider`), donc pas de rafraîchissement périodique côté
+            // widget — c'est l'app qui republie sa timeline, au moment le plus probable où
+            // l'utilisateur va la consulter (elle vient de quitter l'app).
+            .onChange(of: scenePhase) { _, newPhase in
+                if newPhase == .background {
+                    WidgetCenter.shared.reloadAllTimelines()
+                }
             }
             // Doc utilisateur « Handoff » (P9) — reprise sur un autre appareil connecté au même
             // compte iCloud : même pont que `.onOpenURL` ci-dessus, jusqu'à `GamesTabView`.
@@ -55,6 +72,18 @@ struct CaCompteApp: App {
     /// indisponible, container mal provisionné, réseau absent), on retombe sur un stockage
     /// local : « un utilisateur qui refuse iCloud garde une app pleinement fonctionnelle »
     /// s'applique aussi si iCloud est coché mais indisponible.
+    /// Doc utilisateur — Widget (P9) : le store vit dans le conteneur App Group quand il est
+    /// disponible, pour que l'extension widget (bundle id séparé, doc `SharedStore`) puisse lire
+    /// les mêmes données sans dupliquer la synchronisation CloudKit. Retombe sur l'emplacement
+    /// par défaut si le groupe n'est pas provisionné — l'app reste utilisable, seul le widget
+    /// perd sa source.
+    private nonisolated static func configuration(schema: Schema, cloudKitDatabase: ModelConfiguration.CloudKitDatabase) -> ModelConfiguration {
+        guard let sharedURL = SharedStore.storeURL else {
+            return ModelConfiguration(schema: schema, cloudKitDatabase: cloudKitDatabase)
+        }
+        return ModelConfiguration(schema: schema, url: sharedURL, cloudKitDatabase: cloudKitDatabase)
+    }
+
     private static func loadContainer(iCloudSyncEnabled: Bool) async -> ModelContainer {
         await Task.detached(priority: .userInitiated) {
             let schema = Schema(CaCompteSchemaV1.models)
@@ -62,14 +91,14 @@ struct CaCompteApp: App {
                let cloudContainer = try? ModelContainer(
                    for: schema,
                    migrationPlan: CaCompteMigrationPlan.self,
-                   configurations: [ModelConfiguration(schema: schema, cloudKitDatabase: .private("iCloud.com.cacompte.app"))]
+                   configurations: [configuration(schema: schema, cloudKitDatabase: .private("iCloud.com.cacompte.app"))]
                ) {
                 return cloudContainer
             }
             return try! ModelContainer(
                 for: schema,
                 migrationPlan: CaCompteMigrationPlan.self,
-                configurations: [ModelConfiguration(schema: schema, cloudKitDatabase: .none)]
+                configurations: [configuration(schema: schema, cloudKitDatabase: .none)]
             )
         }.value
     }
