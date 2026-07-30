@@ -12,7 +12,13 @@ import Sync
 final class SharedMatchModel {
     private(set) var state: MatchState?
     private(set) var definition: GameDefinition?
+    private var rules: (any GameRules)?
     private(set) var latestRejectionReason: String?
+    /// Doc utilisateur — même bandeau que côté hôte (`LiveMatchModel.roundExplanationMessage`)
+    /// quand une règle modifie un score saisi (doublement Skyjo…) : recalculé localement par le
+    /// rejeu (`engine.replay`), donc visible ici aussi bien que sur l'appareil de l'hôte.
+    private(set) var roundExplanationMessage: String?
+    private var roundExplanationClearTask: Task<Void, Never>?
     /// Doc 09 — l'hôte a arrêté le partage ou la connexion a été perdue. La partie continue de
     /// s'afficher (dernier état connu), mais aucune nouvelle manche ne peut plus être proposée.
     private(set) var isHostConnected = true
@@ -73,6 +79,9 @@ final class SharedMatchModel {
     /// avant d'arrêter d'écouter — sans cet ordre, l'hôte continuerait de nous lister comme
     /// connecté (même bug que `LiveMatchModel.stopSharing`, côté pair cette fois).
     func stop() async {
+        if let matchID = state?.matchID {
+            MatchLiveActivityController.stopTracking(matchID: matchID)
+        }
         await session.leave()
         for task in tasks { task.cancel() }
         tasks = []
@@ -87,6 +96,21 @@ final class SharedMatchModel {
         guard let replayed = try? engine.replay(log, catalog: catalog) else { return }
         state = replayed
         definition = try? catalog.definition(for: replayed.gameID, version: replayed.rulesVersion)
+        rules = try? catalog.rules(for: replayed.gameID, version: replayed.rulesVersion)
+
+        if case .roundCommitted = stamped.event, let explanation = replayed.rounds.last?.entries.compactMap(\.explanation).first {
+            roundExplanationMessage = explanation
+            roundExplanationClearTask?.cancel()
+            roundExplanationClearTask = Task { [weak self] in
+                try? await Task.sleep(for: .seconds(4))
+                guard !Task.isCancelled else { return }
+                self?.roundExplanationMessage = nil
+            }
+        }
+
+        if let definition, let rules {
+            MatchLiveActivityController.refresh(definition: definition, rules: rules, state: replayed)
+        }
     }
 
     /// Doc 09 — « le contributeur applique optimistement l'événement en local et l'annule si une

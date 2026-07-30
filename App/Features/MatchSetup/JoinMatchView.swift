@@ -25,6 +25,10 @@ struct JoinMatchView: View {
     @State private var isConnecting = false
     @State private var connectionError: String?
     @State private var sharedModel: SharedMatchModel?
+    /// Doc utilisateur — retenu après une connexion réussie, pour une reconnexion (`reconnect()`)
+    /// sans redemander le code : l'app en arrière-plan coupe la connexion Wi-Fi (pas
+    /// d'entitlement réseau en tâche de fond), remontée comme perte totale de la partie.
+    @State private var connectedMatchID: UUID?
     @State private var discoveryTask: Task<Void, Never>?
     @State private var wifiAvailability = WiFiAvailability()
     @State private var isPresentingScanner = false
@@ -42,7 +46,7 @@ struct JoinMatchView: View {
         NavigationStack {
             Group {
                 if let sharedModel {
-                    SharedMatchView(model: sharedModel)
+                    SharedMatchView(model: sharedModel, onReconnect: reconnect)
                 } else {
                     discoveryList
                 }
@@ -214,22 +218,50 @@ struct JoinMatchView: View {
         isConnecting = true
         connectionError = nil
         do {
-            let transportSession = try await transport.connect(to: host)
-            let liveSession = LiveSession(deviceID: DeviceIdentity.current, catalog: catalog)
-            try await liveSession.attachToHost(
-                transportSession,
-                matchID: host.id,
-                pairingCode: pairingCode,
-                requestedRole: selectedRole,
-                deviceName: UIDevice.current.name,
-                appVersion: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
-            )
-            sharedModel = SharedMatchModel(session: liveSession, role: selectedRole, catalog: catalog)
+            try await establishConnection(to: host)
             hostAwaitingCode = nil
         } catch {
             connectionError = Self.describe(error)
         }
         isConnecting = false
+    }
+
+    /// Doc utilisateur — reprise après une connexion perdue (app en arrière-plan, coupure
+    /// réseau…) : relance une découverte courte ciblée sur le même id de partie plutôt que de
+    /// réutiliser `DiscoveredHost` tel quel (l'enregistrement Bonjour peut avoir expiré depuis),
+    /// puis rejoue le même appairage — le code et le rôle demandé sont encore là, `SharedMatchView`
+    /// a juste besoin d'un nouveau `SharedMatchModel` une fois la connexion rétablie.
+    private func reconnect() async {
+        guard let matchID = connectedMatchID else { return }
+        var found: DiscoveredHost?
+        for await host in transport.discover(timeout: .seconds(10)) {
+            if host.id == matchID {
+                found = host
+                break
+            }
+        }
+        guard let host = found else { return }
+        try? await establishConnection(to: host)
+    }
+
+    private func establishConnection(to host: DiscoveredHost) async throws {
+        let transportSession = try await transport.connect(to: host)
+        let liveSession = LiveSession(deviceID: DeviceIdentity.current, catalog: catalog)
+        try await liveSession.attachToHost(
+            transportSession,
+            matchID: host.id,
+            pairingCode: pairingCode,
+            requestedRole: selectedRole,
+            deviceName: UIDevice.current.name,
+            appVersion: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
+        )
+        // Doc utilisateur P9 — l'hôte peut assigner un rôle différent de celui demandé
+        // (restriction « observateur uniquement ») : `SharedMatchModel` doit refléter le rôle
+        // réel, pas le souhait initial, sinon l'écran propose de saisir des manches qui seront
+        // rejetées en silence côté hôte.
+        let assignedRole = await liveSession.currentRole()
+        sharedModel = SharedMatchModel(session: liveSession, role: assignedRole, catalog: catalog)
+        connectedMatchID = host.id
     }
 
     /// Distingue l'échec de connexion (réseau, hôte introuvable) de l'absence de réponse

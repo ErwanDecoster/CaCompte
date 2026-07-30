@@ -51,4 +51,16 @@ enum MatchLiveActivityController {
             }
         }
     }
+
+    /// Doc utilisateur — un pair qui quitte une partie partagée sans qu'elle soit terminée (P9,
+    /// remontée utilisateur) : contrairement à une vraie fin de partie (`refresh` ci-dessus,
+    /// `dismissalPolicy: .default` pour laisser voir le score final un moment), rien ne justifie
+    /// de garder la carte sur l'écran verrouillé une fois qu'on a explicitement arrêté de suivre.
+    static func stopTracking(matchID: UUID) {
+        Task { @MainActor in
+            guard let found = activities.removeValue(forKey: matchID) else { return }
+            nonisolated(unsafe) let activity = found
+            await activity.end(nil, dismissalPolicy: .immediate)
+        }
+    }
 }

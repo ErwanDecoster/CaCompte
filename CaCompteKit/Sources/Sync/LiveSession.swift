@@ -38,6 +38,10 @@ public actor LiveSession {
     private var pairingKey: SymmetricKey?
 
     // Hôte uniquement : état de vérité pour arbitrer les propositions.
+    /// Doc utilisateur P9 — restreint qui peut rejoindre en contributeur ; un pair qui demande ce
+    /// rôle alors que c'est désactivé est silencieusement ramené à observateur (doc `hello`
+    /// ci-dessous). `true` par défaut : ne change rien pour qui ne touche pas à ce réglage.
+    private var allowsContributors = true
     private var hostState: MatchState?
     private var hostRules: (any GameRules)?
     private var hostDefinition: GameDefinition?
@@ -90,6 +94,13 @@ public actor LiveSession {
         SessionCrypto.generatePairingCode()
     }
 
+    /// Doc 09 — le rôle réellement assigné par l'hôte, connu seulement après le `welcome` que
+    /// `attachToHost` attend déjà : l'hôte peut renvoyer un rôle différent de celui demandé
+    /// (restriction « observateur uniquement », doc utilisateur P9).
+    public func currentRole() -> Role {
+        role
+    }
+
     public init(deviceID: String, catalog: GameCatalog, engine: MatchEngine = MatchEngine()) {
         self.deviceID = deviceID
         self.catalog = catalog
@@ -104,7 +115,7 @@ public actor LiveSession {
 
     /// `initialLog` est rejoué immédiatement : l'hôte doit connaître l'état courant pour arbitrer
     /// dès la première proposition, pas seulement à la première manche saisie après le partage.
-    public func startHosting(log initialLog: [StampedEvent], pairingCode: String) throws {
+    public func startHosting(log initialLog: [StampedEvent], pairingCode: String, allowsContributors: Bool = true) throws {
         let replayed = try engine.replay(initialLog, catalog: catalog)
         hostState = replayed
         hostDefinition = try catalog.definition(for: replayed.gameID, version: replayed.rulesVersion)
@@ -114,6 +125,7 @@ public actor LiveSession {
         matchID = replayed.matchID
         clock = LamportClock(startingAt: initialLog.map(\.lamport).max() ?? 0)
         pairingKey = SessionCrypto.deriveKey(pairingCode: pairingCode, matchID: replayed.matchID)
+        self.allowsContributors = allowsContributors
     }
 
     /// Le journal faisant foi vient de `MatchRepository` (hôte), pas de `LiveSession` — cette
@@ -136,6 +148,12 @@ public actor LiveSession {
         if !newEvents.isEmpty {
             await broadcastToConnectedPeers(.events(newEvents))
         }
+    }
+
+    /// Doc utilisateur P9 — modifiable en cours de partage : s'applique aux prochaines connexions
+    /// (`hello`), ne rétrograde pas un contributeur déjà connecté quand on la désactive.
+    public func setAllowsContributors(_ allowed: Bool) {
+        allowsContributors = allowed
     }
 
     /// Arrête le partage côté hôte : prévient chaque pair connecté (`.goodbye`, déjà géré par
@@ -174,11 +192,12 @@ public actor LiveSession {
 
         switch message.kind {
         case .hello(let deviceName, _, _, let requestedRole, let deviceID):
+            let assignedRole = (requestedRole == .contributor && !allowsContributors) ? .observer : requestedRole
             peerConnections[peerID]?.deviceName = deviceName
-            peerConnections[peerID]?.role = requestedRole
+            peerConnections[peerID]?.role = assignedRole
             peerConnections[peerID]?.deviceID = deviceID
             publishPeerUpdate()
-            await sendWelcome(to: connection.session, role: requestedRole)
+            await sendWelcome(to: connection.session, role: assignedRole)
         case .proposal(let proposedEvents):
             for proposed in proposedEvents {
                 await arbitrate(proposed, from: peerID, session: connection.session)

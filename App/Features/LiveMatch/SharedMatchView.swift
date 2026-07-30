@@ -8,24 +8,42 @@ import SwiftUI
 /// aux autres qu'une fois acceptée.
 struct SharedMatchView: View {
     let model: SharedMatchModel
+    /// Doc utilisateur — remontée : l'app en arrière-plan coupe la connexion Wi-Fi (pas
+    /// d'entitlement réseau en tâche de fond), et rien ne permettait ensuite de reprendre la
+    /// partie autrement qu'en la perdant complètement. `JoinMatchView` est seul à connaître le
+    /// code d'appairage et le transport nécessaires pour retenter la connexion.
+    let onReconnect: () async -> Void
+    @State private var isReconnecting = false
     @State private var draftTexts: [Participant.ID: String] = [:]
+    @State private var closedParticipantID: Participant.ID?
     @FocusState private var focusedParticipantID: Participant.ID?
     @State private var activeIndex = 0
+    @State private var isPresentingRoundHistory = false
 
     var body: some View {
         Group {
-            if let definition = model.definition {
-                liveView(definition: definition)
+            if let definition = model.definition, let state = model.state {
+                liveView(definition: definition, state: state)
             } else {
                 ProgressView("Connexion à la partie…")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
-        .navigationTitle(model.definition?.name.fr ?? "Partie partagée")
+        .navigationTitle(navigationTitle)
         .navigationBarTitleDisplayMode(.inline)
     }
 
-    private func liveView(definition: GameDefinition) -> some View {
+    private var navigationTitle: String {
+        guard let definition = model.definition else { return "Partie partagée" }
+        let roundNumber = (model.state?.rounds.count ?? 0) + 1
+        return "\(definition.name.fr) · Manche \(roundNumber)"
+    }
+
+    private func requiresCloserSelection(_ definition: GameDefinition) -> Bool {
+        definition.scoring.modifiers.contains { $0.kind == .exclusiveFlag && $0.required }
+    }
+
+    private func liveView(definition: GameDefinition, state: MatchState) -> some View {
         List {
             if !model.isHostConnected {
                 Section {
@@ -37,6 +55,29 @@ struct SharedMatchView: View {
                         Text("Connexion à l'hôte perdue. Le tableau affiché est le dernier reçu.")
                             .font(.label)
                             .foregroundStyle(.semanticError)
+                        Button(isReconnecting ? "Reconnexion…" : "Se reconnecter") {
+                            Task {
+                                isReconnecting = true
+                                await onReconnect()
+                                isReconnecting = false
+                            }
+                        }
+                        .disabled(isReconnecting)
+                    }
+                }
+            }
+
+            if model.canPropose, requiresCloserSelection(definition) {
+                Section {
+                    Text("A fermé la manche").font(.label).foregroundStyle(.textSecondary)
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: Space.sm) {
+                            ForEach(model.participants) { participant in
+                                Chip(LocalizedStringResource(stringLiteral: participant.displayName), isSelected: closedParticipantID == participant.id) {
+                                    closedParticipantID = participant.id
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -65,15 +106,7 @@ struct SharedMatchView: View {
                 Text(reason).font(.label).foregroundStyle(.semanticError)
             }
 
-            if model.canPropose {
-                Section {
-                    Button("Envoyer la manche") {
-                        Task { await sendRound() }
-                    }
-                    .buttonStyle(.primary())
-                    .disabled(!model.isHostConnected)
-                }
-            } else {
+            if !model.canPropose {
                 Section {
                     Text("Tu observes cette partie : la saisie se fait sur l'appareil de l'hôte ou d'un contributeur.")
                         .font(.bodySmall)
@@ -83,6 +116,13 @@ struct SharedMatchView: View {
         }
         .listStyle(.plain)
         .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    isPresentingRoundHistory = true
+                } label: {
+                    Label("Voir les manches", systemImage: "list.bullet")
+                }
+            }
             if model.canPropose {
                 ToolbarItemGroup(placement: .keyboard) {
                     Spacer()
@@ -92,6 +132,31 @@ struct SharedMatchView: View {
                 }
             }
         }
+        // Doc utilisateur — même bug que `LiveMatchView` : la barre d'accessoires du clavier
+        // disparaît avec lui, laissant l'écran sans moyen de valider la manche.
+        .safeAreaInset(edge: .bottom) {
+            if model.canPropose {
+                Button(isLastField ? "Envoyer" : "Suivant") {
+                    advanceFocus()
+                }
+                .buttonStyle(.primary(size: .medium))
+                .frame(maxWidth: .infinity)
+                .padding(.horizontal, Space.lg)
+                .padding(.vertical, Space.sm)
+                .background(.bar)
+            }
+        }
+        .sheet(isPresented: $isPresentingRoundHistory) {
+            RoundHistoryView(state: state, definition: definition)
+        }
+        .overlay(alignment: .top) {
+            if let message = model.roundExplanationMessage {
+                Banner(LocalizedStringResource(stringLiteral: message))
+                    .padding(.top, Space.sm)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+            }
+        }
+        .animation(.default, value: model.roundExplanationMessage)
         .onChange(of: focusedParticipantID) { _, newValue in
             guard let newValue, let index = model.participants.firstIndex(where: { $0.id == newValue }) else { return }
             activeIndex = index
@@ -143,9 +208,14 @@ struct SharedMatchView: View {
 
     private func sendRound() async {
         let inputs = model.participants.map { participant in
-            ScoreInput(participantID: participant.id, rawValue: Int(draftTexts[participant.id] ?? "") ?? 0)
+            ScoreInput(
+                participantID: participant.id,
+                rawValue: Int(draftTexts[participant.id] ?? "") ?? 0,
+                modifiers: participant.id == closedParticipantID ? [.closedRound] : []
+            )
         }
         await model.propose(inputs)
         draftTexts = [:]
+        closedParticipantID = nil
     }
 }

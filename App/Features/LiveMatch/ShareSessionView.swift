@@ -13,6 +13,10 @@ struct ShareSessionView: View {
     @State private var errorMessage: String?
     @State private var isStopping = false
     @State private var wifiAvailability = WiFiAvailability()
+    /// Doc utilisateur P9 — remontée : pouvoir imposer « observateur uniquement » à la création
+    /// (ou en cours) du partage. Ne rétrograde pas un contributeur déjà connecté (doc
+    /// `LiveSession.setAllowsContributors`), seulement les prochaines connexions.
+    @State private var allowsContributors = true
 
     var body: some View {
         NavigationStack {
@@ -66,6 +70,21 @@ struct ShareSessionView: View {
                     .padding(.vertical, Space.lg)
                 }
 
+                Section {
+                    Toggle("Autoriser les contributeurs", isOn: $allowsContributors)
+                        .tint(.brandInk)
+                        .onChange(of: allowsContributors) { _, newValue in
+                            Task { await model.setAllowsContributors(newValue) }
+                        }
+                    Text(
+                        allowsContributors
+                            ? "Les personnes qui rejoignent peuvent choisir d'observer ou de proposer des manches."
+                            : "Les personnes qui rejoignent ne peuvent qu'observer, quel que soit leur choix — ça ne change rien pour les contributeurs déjà connectés."
+                    )
+                    .font(.bodySmall)
+                    .foregroundStyle(.textTertiary)
+                }
+
                 Section("Appareils connectés") {
                     if model.connectedPeers.isEmpty {
                         Text("En attente d'un appareil qui rejoint…")
@@ -114,7 +133,7 @@ struct ShareSessionView: View {
     private func startSharing() async {
         errorMessage = nil
         do {
-            try await model.startSharing(deviceName: UIDevice.current.name)
+            try await model.startSharing(deviceName: UIDevice.current.name, allowsContributors: allowsContributors)
         } catch {
             errorMessage = error.localizedDescription
         }
