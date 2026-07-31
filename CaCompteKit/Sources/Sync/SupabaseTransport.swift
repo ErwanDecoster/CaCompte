@@ -36,10 +36,12 @@ public final class SupabaseTransport: @unchecked Sendable {
     private let acceptedStream: AsyncStream<any TransportSession>
     private let acceptedContinuation: AsyncStream<any TransportSession>.Continuation
     private var hostTasks: [Task<Void, Never>] = []
+    private var hostStatusSubscription: RealtimeSubscription?
 
     // MARK: Pair
     private var joinedChannel: RealtimeChannelV2?
     private var joinedTasks: [Task<Void, Never>] = []
+    private var joinedStatusSubscription: RealtimeSubscription?
 
     /// Doc utilisateur — clé constante côté hôte, jamais le `deviceID` réel : un pair n'a besoin de
     /// connaître que ce sentinel, pas un identifiant d'appareil qu'il n'a aucun moyen d'obtenir à
@@ -81,11 +83,27 @@ public final class SupabaseTransport: @unchecked Sendable {
         }
         hostTasks = [presenceTask, broadcastTask]
 
+        // Doc utilisateur P9 — remontée : après une mise en arrière-plan assez longue pour que
+        // l'OS suspende le processus, le socket se ferme ; au retour au premier plan, le SDK le
+        // rouvre et réabonne le canal tout seul (`RealtimeLifecycleManager`), mais ne retrace
+        // jamais la présence pour nous — `track()` est un envoi ponctuel, jamais rejoué
+        // automatiquement lors d'un ré-abonnement. Sans ce ré-enregistrement à chaque passage à
+        // `.subscribed` (le premier compris), l'hôte disparaîtrait silencieusement de la présence
+        // pour les pairs déjà connectés après une reconnexion sous-jacente, même si rien d'autre
+        // n'a changé de son côté.
+        let deviceName = deviceName
+        hostStatusSubscription = channel.onStatusChange { status in
+            guard status == .subscribed else { return }
+            Task { try? await channel.track(["deviceName": deviceName]) }
+        }
+
         try await channel.subscribeWithError()
         try await channel.track(["deviceName": deviceName])
     }
 
     public func stopAdvertising() async {
+        hostStatusSubscription?.cancel()
+        hostStatusSubscription = nil
         for task in hostTasks { task.cancel() }
         hostTasks = []
         for session in sessionsByPeerID.values { session.markClosed() }
@@ -107,11 +125,8 @@ public final class SupabaseTransport: @unchecked Sendable {
 
     @MainActor
     private func handleHostPresence(_ action: any PresenceAction, channel: RealtimeChannelV2) {
-        for peerID in action.joins.keys {
-            guard peerID != Self.hostPresenceKey, sessionsByPeerID[peerID] == nil else { continue }
-            let session = SupabaseTransportSession(channel: channel, selfID: deviceID, peerID: peerID, ownsChannel: false)
-            sessionsByPeerID[peerID] = session
-            acceptedContinuation.yield(session)
+        for peerID in action.joins.keys where peerID != Self.hostPresenceKey {
+            _ = session(forPeer: peerID, channel: channel)
         }
         for peerID in action.leaves.keys {
             sessionsByPeerID[peerID]?.markClosed()
@@ -122,7 +137,26 @@ public final class SupabaseTransport: @unchecked Sendable {
     @MainActor
     private func handleHostBroadcast(_ payload: JSONObject) {
         guard let envelope = Self.decodeEnvelope(payload), envelope.to == deviceID || envelope.to == Self.hostPresenceKey else { return }
-        sessionsByPeerID[envelope.from]?.receive(base64: envelope.data)
+        guard let channel = hostChannel else { return }
+        session(forPeer: envelope.from, channel: channel).receive(base64: envelope.data)
+    }
+
+    /// Doc utilisateur — remontée : le « hello » d'un pair (broadcast) et son entrée de présence
+    /// (« il vient de rejoindre ») arrivent sur le même socket, dans le bon ordre, mais sont
+    /// consommés par deux tâches Swift indépendantes (une par `AsyncStream`, présence et
+    /// broadcast) : rien ne garantit que la présence soit traitée avant le broadcast. Quand le
+    /// broadcast gagnait la course, `sessionsByPeerID` ne contenait pas encore ce pair — son
+    /// « hello » était silencieusement perdu, et il n'obtenait jamais de `welcome` (« L'hôte n'a
+    /// pas répondu » côté pair, après le délai de `LiveSession.attachToHost`). Créer la session à
+    /// la première occurrence, quel que soit le chemin qui arrive en premier, rend le
+    /// raccordement robuste à cette course au lieu de dépendre d'un ordre non garanti.
+    @MainActor
+    private func session(forPeer peerID: String, channel: RealtimeChannelV2) -> SupabaseTransportSession {
+        if let existing = sessionsByPeerID[peerID] { return existing }
+        let session = SupabaseTransportSession(channel: channel, selfID: deviceID, peerID: peerID, ownsChannel: false)
+        sessionsByPeerID[peerID] = session
+        acceptedContinuation.yield(session)
+        return session
     }
 
     // MARK: - Pair
@@ -178,6 +212,15 @@ public final class SupabaseTransport: @unchecked Sendable {
             }
         }
         joinedTasks = [broadcastTask, presenceTask]
+
+        // Doc utilisateur P9 — même remontée que côté hôte (voir `advertise`) : un pair dont le
+        // socket a été rouvert par le SDK après une mise en arrière-plan doit retracer sa présence
+        // lui-même, `track()` n'étant jamais rejoué automatiquement par un ré-abonnement.
+        let deviceName = deviceName
+        joinedStatusSubscription = channel.onStatusChange { status in
+            guard status == .subscribed else { return }
+            Task { try? await channel.track(["deviceName": deviceName]) }
+        }
 
         try await channel.subscribeWithError()
         try await channel.track(["deviceName": deviceName])

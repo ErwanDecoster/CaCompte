@@ -45,7 +45,13 @@ final class SharedMatchModel {
     /// Doc 09 — seul un contributeur peut proposer une manche ; un observateur reste en lecture.
     var canPropose: Bool { role == .contributor }
 
-    init(session: LiveSession, role: Role, catalog: GameCatalog) {
+    /// Doc utilisateur P9 — appelé (avec `self`) depuis l'unique tâche qui consomme déjà
+    /// `session.hostLeft` ci-dessous, jamais par un second abonnement séparé : `AsyncStream` ne
+    /// livre chaque valeur qu'à un seul consommateur, et un second `for await` en parallèle sur
+    /// le même flux en avait déjà privé un abonné plus tôt (bug BLE-era, voir historique Git).
+    /// `MatchConnectionCoordinator` s'en sert pour déclencher une reprise automatique sans dupliquer
+    /// l'abonnement.
+    init(session: LiveSession, role: Role, catalog: GameCatalog, onHostLeft: ((SharedMatchModel) -> Void)? = nil) {
         self.session = session
         self.role = role
         self.catalog = catalog
@@ -62,12 +68,14 @@ final class SharedMatchModel {
         }
         let hostLeftTask = Task { [weak self] in
             for await _ in session.hostLeft {
-                self?.isHostConnected = false
+                guard let self else { return }
+                self.isHostConnected = false
                 // Doc utilisateur — remontée : l'écran verrouillé continuait d'afficher le
                 // dernier score reçu sans rien signaler, comme s'il était toujours à jour.
-                if let matchID = self?.state?.matchID {
+                if let matchID = self.state?.matchID {
                     MatchLiveActivityController.markStale(matchID: matchID)
                 }
+                onHostLeft?(self)
             }
         }
         tasks = [eventsTask, rejectionsTask, hostLeftTask]

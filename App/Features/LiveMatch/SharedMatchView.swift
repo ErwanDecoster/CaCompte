@@ -8,10 +8,11 @@ import SwiftUI
 /// aux autres qu'une fois acceptée.
 struct SharedMatchView: View {
     let model: SharedMatchModel
-    /// Doc utilisateur P9 — Supabase Realtime se reconnecte déjà tout seul pour toute coupure
-    /// passagère ; ce bouton ne sert que si la perte est réelle (hôte arrêté, coupure prolongée).
-    /// Retourne si la tentative a abouti, pour qu'un échec affiche un vrai message plutôt qu'un
-    /// aller-retour silencieux vers l'état initial.
+    /// Doc utilisateur P9 — `MatchConnectionCoordinator` retente déjà seul, toutes les quelques
+    /// secondes, tant que cet écran affiche une perte de connexion : ce bouton ne sert qu'à forcer
+    /// une tentative immédiate plutôt que d'attendre la prochaine. Retourne si la tentative a
+    /// abouti, pour qu'un échec affiche un vrai message plutôt qu'un aller-retour silencieux vers
+    /// l'état initial.
     let onReconnect: () async -> Bool
     @State private var isReconnecting = false
     @State private var reconnectFailed = false
@@ -57,12 +58,10 @@ struct SharedMatchView: View {
                         Text("Connexion à l'hôte perdue. Le tableau affiché est le dernier reçu.")
                             .font(.label)
                             .foregroundStyle(.semanticError)
-                        if reconnectFailed {
-                            Text("Toujours pas de connexion. Réessaie dans un instant.")
-                                .font(.bodySmall)
-                                .foregroundStyle(.textTertiary)
-                        }
-                        Button(isReconnecting ? "Reconnexion…" : "Se reconnecter") {
+                        Text(reconnectFailed ? "Toujours pas de connexion — nouvelle tentative automatique en cours." : "Reprise automatique en cours.")
+                            .font(.bodySmall)
+                            .foregroundStyle(.textTertiary)
+                        Button(isReconnecting ? "Reconnexion…" : "Réessayer maintenant") {
                             Task {
                                 isReconnecting = true
                                 reconnectFailed = false
