@@ -20,7 +20,7 @@ import Supabase
 /// - Pas de fragmentation nécessaire (contrairement au BLE, contraint par la taille d'écriture
 ///   d'une caractéristique) : un message tient dans un seul frame JSON.
 ///
-/// **Découverte** : `open_games` (Postgres, migration `supabase/migrations`) résout un code
+/// **Découverte** : `cacompte_open_games` (Postgres, migration `supabase/migrations`) résout un code
 /// d'appairage tapé à la main vers le `matchID` correspondant — remplace le scan Wi-Fi/BLE, qui
 /// n'a jamais eu besoin d'exister avec Supabase (le code suffit, pas de proximité physique).
 public final class SupabaseTransport: @unchecked Sendable {
@@ -60,7 +60,7 @@ public final class SupabaseTransport: @unchecked Sendable {
 
     public func advertise(matchID: UUID, gameID: String, participantCount: Int, pairingCode: String) async throws {
         hostMatchID = matchID
-        try await client.from("open_games").upsert(
+        try await client.from("cacompte_open_games").upsert(
             OpenGameRow(pairingCode: pairingCode, matchID: matchID, gameID: gameID, participantCount: participantCount, deviceName: deviceName, platform: platform.rawValue),
             onConflict: "pairing_code"
         ).execute()
@@ -114,7 +114,7 @@ public final class SupabaseTransport: @unchecked Sendable {
         }
         hostChannel = nil
         if let matchID = hostMatchID {
-            _ = try? await client.from("open_games").delete().eq("match_id", value: matchID.uuidString).execute()
+            _ = try? await client.from("cacompte_open_games").delete().eq("match_id", value: matchID.uuidString).execute()
         }
         hostMatchID = nil
     }
@@ -168,7 +168,7 @@ public final class SupabaseTransport: @unchecked Sendable {
     public func resolveGame(code: String) async throws -> DiscoveredHost {
         let row: OpenGameRow
         do {
-            row = try await client.from("open_games")
+            row = try await client.from("cacompte_open_games")
                 .select()
                 .eq("pairing_code", value: code)
                 .single()
@@ -240,7 +240,7 @@ private struct SupabaseEnvelope: Codable {
 }
 
 public enum SupabaseTransportError: Error, Sendable, Equatable {
-    /// Aucune ligne `open_games` pour ce code — code erroné, périmé (partie déjà arrêtée), ou
+    /// Aucune ligne `cacompte_open_games` pour ce code — code erroné, périmé (partie déjà arrêtée), ou
     /// jamais existé.
     case gameNotFound
 }
@@ -264,12 +264,12 @@ struct OpenGameRow: Codable {
 }
 
 /// Doc utilisateur P9 — clé **anon/publique** Supabase : conçue pour être embarquée dans un client
-/// (protégée par les politiques RLS de `open_games`, pas par le secret), à la différence d'une clé
+/// (protégée par les politiques RLS de `cacompte_open_games`, pas par le secret), à la différence d'une clé
 /// `service_role`. Le contenu réel des manches reste protégé par `SessionCrypto` (chiffrement dérivé
 /// du code d'appairage), pas par cette clé.
 enum SupabaseSyncConfig {
-    static let projectURL = URL(string: "https://utmviqounxbsrubhrgex.supabase.co")!
-    static let anonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0bXZpcW91bnhic3J1YmhyZ2V4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU0ODg2NDIsImV4cCI6MjEwMTA2NDY0Mn0.3gS9ziRDe-Llem9NQI6b1BdpUnbmK0r8XTlWThE4ZCo"
+    static let projectURL = URL(string: "https://hcjehnnvqmkdwirgpcgu.supabase.co")!
+    static let anonKey = "sb_publishable_YhV5A3mH3aUCejLx1QC2OQ_Hc18SA_b"
 }
 
 final class SupabaseTransportSession: TransportSession, @unchecked Sendable {

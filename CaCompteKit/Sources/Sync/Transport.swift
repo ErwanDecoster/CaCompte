@@ -15,7 +15,7 @@ public protocol TransportSession: Sendable {
 }
 
 /// Doc 09 — contexte d'annonce plafonné : ce qu'un pair voit avant de rejoindre, jamais
-/// l'instantané de partie. Résolu via `open_games` (Supabase) à partir d'un code d'appairage,
+/// l'instantané de partie. Résolu via `cacompte_open_games` (Supabase) à partir d'un code d'appairage,
 /// plutôt que découvert par scan réseau/Bluetooth.
 public struct DiscoveredHost: Sendable, Identifiable, Equatable {
     public let id: UUID

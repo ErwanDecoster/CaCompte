@@ -4,7 +4,7 @@
 // elle-même (qui ne tourne justement plus). Appelée par l'hôte (le seul appareil qui fait foi sur
 // le journal) juste après chaque `syncHostLog`, jamais par les pairs.
 //
-// Ne stocke jamais le score : uniquement les jetons de push (`live_activity_tokens`, RLS), lus ici
+// Ne stocke jamais le score : uniquement les jetons de push (`cacompte_live_activity_tokens`, RLS), lus ici
 // avec la clé `service_role` (injectée automatiquement par le runtime Edge Functions, jamais commit
 // dans le repo). Le score transite uniquement dans le corps de la requête reçue et celui envoyé à
 // APNs, jamais persisté côté serveur.
@@ -78,7 +78,7 @@ async function importApnsKey(): Promise<CryptoKey> {
 }
 
 /// Jeton fournisseur APNs (JWT ES256, doc Apple « Establishing a token-based connection ») —
-/// distinct du jeton de push par appareil stocké dans `live_activity_tokens`.
+/// distinct du jeton de push par appareil stocké dans `cacompte_live_activity_tokens`.
 async function providerToken(): Promise<string> {
   const now = Math.floor(Date.now() / 1000);
   if (cachedProviderToken && now - cachedProviderToken.issuedAt < 55 * 60) {
@@ -122,7 +122,7 @@ async function sendToToken(pushToken: string, body: PushRequest): Promise<{ ok: 
   });
   if (response.ok) return { ok: true, shouldForget: false };
   // Doc utilisateur — un jeton révoqué/expiré ne redeviendra jamais valide : autant nettoyer
-  // `live_activity_tokens` tout de suite plutôt que de le retenter indéfiniment à chaque manche.
+  // `cacompte_live_activity_tokens` tout de suite plutôt que de le retenter indéfiniment à chaque manche.
   const shouldForget = response.status === 400 || response.status === 410;
   return { ok: false, shouldForget };
 }
@@ -144,7 +144,7 @@ Deno.serve(async (request) => {
 
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
   const { data: tokens, error } = await supabase
-    .from("live_activity_tokens")
+    .from("cacompte_live_activity_tokens")
     .select("device_id, push_token")
     .eq("match_id", body.matchID);
 
@@ -160,7 +160,7 @@ Deno.serve(async (request) => {
       const result = await sendToToken(row.push_token, body);
       if (result.shouldForget) {
         await supabase
-          .from("live_activity_tokens")
+          .from("cacompte_live_activity_tokens")
           .delete()
           .eq("match_id", body.matchID)
           .eq("device_id", row.device_id);

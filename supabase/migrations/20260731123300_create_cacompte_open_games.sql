@@ -4,7 +4,7 @@
 -- réel des manches ne transite jamais ici, seulement le nécessaire pour rejoindre le bon canal
 -- Realtime (`match:<match_id>`). Aucune ligne n'est censée survivre longtemps : l'hôte supprime la
 -- sienne à l'arrêt du partage (voir `SupabaseTransport.stopAdvertising`).
-create table if not exists public.open_games (
+create table if not exists public.cacompte_open_games (
     pairing_code text primary key,
     match_id uuid not null,
     game_id text not null,
@@ -14,23 +14,23 @@ create table if not exists public.open_games (
     created_at timestamptz not null default now()
 );
 
-alter table public.open_games enable row level security;
+alter table public.cacompte_open_games enable row level security;
 
 -- Doc utilisateur — même modèle de confiance qu'aujourd'hui (Wi-Fi/BLE) : quiconque connaît le
 -- code peut rejoindre : ce n'est pas une permission par utilisateur (pas d'authentification
 -- Supabase dans ce projet), le contenu réel reste protégé par le chiffrement côté client
 -- (`SessionCrypto`, dérivé du code d'appairage), pas par une règle de base de données.
-create policy "anon can read open_games" on public.open_games
+create policy "anon can read cacompte_open_games" on public.cacompte_open_games
     for select
     to anon
     using (true);
 
-create policy "anon can insert open_games" on public.open_games
+create policy "anon can insert cacompte_open_games" on public.cacompte_open_games
     for insert
     to anon
     with check (true);
 
-create policy "anon can delete own open_games" on public.open_games
+create policy "anon can delete own cacompte_open_games" on public.cacompte_open_games
     for delete
     to anon
     using (true);
@@ -38,4 +38,4 @@ create policy "anon can delete own open_games" on public.open_games
 -- Doc utilisateur — évite d'accumuler indéfiniment des parties abandonnées sans qu'un appareil
 -- n'ait pu supprimer proprement sa ligne (app tuée en plein partage) : purge tout ce qui dépasse
 -- 24h, largement au-delà de la durée d'une partie normale.
-create index if not exists open_games_created_at_idx on public.open_games (created_at);
+create index if not exists cacompte_open_games_created_at_idx on public.cacompte_open_games (created_at);
