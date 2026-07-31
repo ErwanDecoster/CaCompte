@@ -17,3 +17,7 @@ ci_scripts/*.log
 
 # macOS
 .DS_Store
+
+# Secrets
+*.p8
+.env.local
