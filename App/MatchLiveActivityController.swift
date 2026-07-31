@@ -1,17 +1,30 @@
 import ActivityKit
 import Domain
 import Foundation
+import Store
+import Sync
 
 /// Doc utilisateur — Live Activity (roadmap P9) : point d'entrée unique pour les trois écrans de
 /// saisie (`LiveMatchModel`, `YamsSheetModel`, `BeloteRoundModel`), qui partagent tous la même
 /// forme `state`/`definition`/`rules` (doc « point d'aiguillage unique », `MatchPlayView`). Un
 /// dictionnaire par id de partie plutôt qu'un singleton simple : rien n'empêche en théorie deux
 /// parties d'être à l'écran l'une après l'autre dans la même session.
+///
+/// Doc utilisateur P9 — remontée : un `Activity.update` local ne peut s'exécuter que pendant que
+/// l'app tourne, or l'OS suspend le processus peu après une mise en arrière-plan — l'écran
+/// verrouillé d'un pair backgrounded gelait alors sur le dernier score reçu. Chaque activité est
+/// donc créée avec `pushType: .token` : son jeton (`Activity.pushTokenUpdates`) est enregistré
+/// auprès de Supabase (`LiveActivityPushClient`), et l'hôte — seul appareil qui fait foi sur le
+/// journal — pousse un vrai APNs à chaque manche validée (`isAuthoritative: true`), qui met à jour
+/// l'écran verrouillé de chaque pair même suspendu. La mise à jour locale (`activity.update`) reste
+/// en place à côté : instantanée pour l'appareil qui tourne encore, le push ne fait que couvrir les
+/// autres.
 @MainActor
 enum MatchLiveActivityController {
     private static var activities: [UUID: Activity<MatchActivityAttributes>] = [:]
+    private static var pushTokenTasks: [UUID: Task<Void, Never>] = [:]
 
-    static func refresh(definition: GameDefinition, rules: any GameRules, state: MatchState) {
+    static func refresh(definition: GameDefinition, rules: any GameRules, state: MatchState, isAuthoritative: Bool = false) {
         guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
 
         let names = Dictionary(uniqueKeysWithValues: state.participants.map { ($0.id, $0.displayName) })
@@ -37,9 +50,13 @@ enum MatchLiveActivityController {
                 // après la fin de partie (comportement voulu au départ, « voir le score final »),
                 // mais ça se lisait comme un bug (« la partie est finie, pourquoi c'est encore
                 // là ? »). Retrait immédiat, comme `stopTracking` ci-dessous.
+                pushTokenTasks.removeValue(forKey: matchID)?.cancel()
                 guard let found = activities.removeValue(forKey: matchID) else { return }
                 nonisolated(unsafe) let activity = found
                 await activity.end(ActivityContent(state: content, staleDate: nil), dismissalPolicy: .immediate)
+                if isAuthoritative {
+                    await LiveActivityPushClient.push(matchID: matchID, event: "end", contentState: content)
+                }
                 return
             }
 
@@ -51,7 +68,24 @@ enum MatchLiveActivityController {
                 // refusées dans les réglages système, ou si le budget d'activités simultanées
                 // est épuisé — la partie reste jouable sans, seul l'écran verrouillé n'affiche
                 // rien de plus.
-                activities[matchID] = try? Activity.request(attributes: attributes, content: ActivityContent(state: content, staleDate: nil))
+                guard let activity = try? Activity.request(
+                    attributes: attributes,
+                    content: ActivityContent(state: content, staleDate: nil),
+                    pushType: .token
+                ) else { return }
+                activities[matchID] = activity
+                nonisolated(unsafe) let startedActivity = activity
+                pushTokenTasks[matchID] = Task {
+                    let deviceID = DeviceIdentity.current
+                    for await tokenData in startedActivity.pushTokenUpdates {
+                        let pushToken = tokenData.map { String(format: "%02x", $0) }.joined()
+                        await LiveActivityPushClient.registerToken(matchID: matchID, deviceID: deviceID, pushToken: pushToken)
+                    }
+                }
+            }
+
+            if isAuthoritative {
+                await LiveActivityPushClient.push(matchID: matchID, event: "update", contentState: content)
             }
         }
     }
@@ -60,6 +94,7 @@ enum MatchLiveActivityController {
     /// remontée utilisateur) : retrait immédiat, même logique que la fin de partie ci-dessus.
     static func stopTracking(matchID: UUID) {
         Task { @MainActor in
+            pushTokenTasks.removeValue(forKey: matchID)?.cancel()
             guard let found = activities.removeValue(forKey: matchID) else { return }
             nonisolated(unsafe) let activity = found
             await activity.end(nil, dismissalPolicy: .immediate)
