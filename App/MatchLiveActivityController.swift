@@ -25,7 +25,10 @@ enum MatchLiveActivityController {
     private static var pushTokenTasks: [UUID: Task<Void, Never>] = [:]
 
     static func refresh(definition: GameDefinition, rules: any GameRules, state: MatchState, isAuthoritative: Bool = false) {
-        guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
+        guard ActivityAuthorizationInfo().areActivitiesEnabled else {
+            print("[MatchLiveActivityController] Live Activities disabled by system/user")
+            return
+        }
 
         let names = Dictionary(uniqueKeysWithValues: state.participants.map { ($0.id, $0.displayName) })
         let standings = rules.standings(state, definition: definition)
@@ -68,19 +71,28 @@ enum MatchLiveActivityController {
                 // refusées dans les réglages système, ou si le budget d'activités simultanées
                 // est épuisé — la partie reste jouable sans, seul l'écran verrouillé n'affiche
                 // rien de plus.
-                guard let activity = try? Activity.request(
-                    attributes: attributes,
-                    content: ActivityContent(state: content, staleDate: nil),
-                    pushType: .token
-                ) else { return }
+                let activity: Activity<MatchActivityAttributes>
+                do {
+                    activity = try Activity.request(
+                        attributes: attributes,
+                        content: ActivityContent(state: content, staleDate: nil),
+                        pushType: .token
+                    )
+                } catch {
+                    print("[MatchLiveActivityController] Activity.request FAILED: \(error)")
+                    return
+                }
                 activities[matchID] = activity
                 nonisolated(unsafe) let startedActivity = activity
                 pushTokenTasks[matchID] = Task {
                     let deviceID = DeviceIdentity.current
+                    print("[MatchLiveActivityController] waiting for pushTokenUpdates match=\(matchID) device=\(deviceID)")
                     for await tokenData in startedActivity.pushTokenUpdates {
                         let pushToken = tokenData.map { String(format: "%02x", $0) }.joined()
+                        print("[MatchLiveActivityController] got push token: \(pushToken)")
                         await LiveActivityPushClient.registerToken(matchID: matchID, deviceID: deviceID, pushToken: pushToken)
                     }
+                    print("[MatchLiveActivityController] pushTokenUpdates stream ended match=\(matchID)")
                 }
             }
 

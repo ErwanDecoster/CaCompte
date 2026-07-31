@@ -30,12 +30,17 @@ public enum LiveActivityPushClient {
     /// iOS) : `upsert` sur la clé primaire `(match_id, device_id)` remplace toujours l'ancien
     /// jeton plutôt que d'en accumuler plusieurs par appareil.
     public static func registerToken(matchID: UUID, deviceID: String, pushToken: String) async {
-        _ = try? await client.from("cacompte_live_activity_tokens")
-            .upsert(
-                TokenRow(matchID: matchID, deviceID: deviceID, pushToken: pushToken),
-                onConflict: "match_id,device_id"
-            )
-            .execute()
+        do {
+            try await client.from("cacompte_live_activity_tokens")
+                .upsert(
+                    TokenRow(matchID: matchID, deviceID: deviceID, pushToken: pushToken),
+                    onConflict: "match_id,device_id"
+                )
+                .execute()
+            print("[LiveActivityPushClient] registerToken OK match=\(matchID) device=\(deviceID)")
+        } catch {
+            print("[LiveActivityPushClient] registerToken FAILED: \(error)")
+        }
     }
 
     private struct PushBody<Content: Encodable>: Encodable {
@@ -64,6 +69,12 @@ public enum LiveActivityPushClient {
             "Bearer \(SupabaseSyncConfig.anonKey)", forHTTPHeaderField: "Authorization")
         request.httpBody = try? JSONEncoder().encode(
             PushBody(matchID: matchID, event: event, contentState: contentState))
-        _ = try? await URLSession.shared.data(for: request)
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
+            let status = (response as? HTTPURLResponse)?.statusCode ?? -1
+            print("[LiveActivityPushClient] push status=\(status) body=\(String(data: data, encoding: .utf8) ?? "?")")
+        } catch {
+            print("[LiveActivityPushClient] push FAILED: \(error)")
+        }
     }
 }
