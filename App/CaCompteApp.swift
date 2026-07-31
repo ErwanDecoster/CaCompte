@@ -18,6 +18,12 @@ private enum AppTab: Hashable {
 struct CaCompteApp: App {
     private let settings = AppSettings()
     private let deepLinkRouter = DeepLinkRouter.shared
+    /// Doc utilisateur P9 — seul rôle : exister dès le lancement (même patron que
+    /// `deepLinkRouter`) pour reprendre une éventuelle partie partagée en cours sans attendre que
+    /// l'utilisateur rouvre l'écran de partage (voir doc `MatchConnectionCoordinator`). Plus besoin
+    /// d'un `AppDelegate` dédié depuis le passage à Supabase Realtime (l'ancien rôle — créer tôt le
+    /// `CBCentralManager` pour la restauration d'état BLE — n'existe plus).
+    private let matchConnectionCoordinator = MatchConnectionCoordinator.shared
     @State private var container: ModelContainer?
     @State private var selectedTab: AppTab = .players
     @Environment(\.scenePhase) private var scenePhase

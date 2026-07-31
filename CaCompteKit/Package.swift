@@ -11,6 +11,16 @@ let package = Package(
         .library(name: "Sync", targets: ["Sync"]),
         .library(name: "DesignSystem", targets: ["DesignSystem"]),
     ],
+    // Doc utilisateur P9 — remontée : après cinq correctifs BLE distincts, tous réels et
+    // vérifiés, sans que la connexion ne s'établisse jamais entre les deux appareils, la
+    // synchronisation live est déplacée sur Supabase Realtime plutôt que sur du Wi-Fi/BLE fait
+    // maison. Exception explicite et assumée à l'ADR-0012 (« aucune dépendance tierce ») — la
+    // fiabilité de connexion/reconnexion est déléguée à un SDK websocket mature plutôt qu'à du
+    // code réseau/Bluetooth maison qui s'est montré structurellement peu fiable en conditions
+    // réelles.
+    dependencies: [
+        .package(url: "https://github.com/supabase/supabase-swift.git", from: "2.0.0"),
+    ],
     targets: [
         .target(
             name: "Domain",
@@ -32,7 +42,10 @@ let package = Package(
         ),
         .target(
             name: "Sync",
-            dependencies: ["Domain"],
+            dependencies: [
+                "Domain",
+                .product(name: "Supabase", package: "supabase-swift"),
+            ],
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
         .target(

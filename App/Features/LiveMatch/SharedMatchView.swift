@@ -8,12 +8,13 @@ import SwiftUI
 /// aux autres qu'une fois acceptée.
 struct SharedMatchView: View {
     let model: SharedMatchModel
-    /// Doc utilisateur — remontée : l'app en arrière-plan coupe la connexion Wi-Fi (pas
-    /// d'entitlement réseau en tâche de fond), et rien ne permettait ensuite de reprendre la
-    /// partie autrement qu'en la perdant complètement. `JoinMatchView` est seul à connaître le
-    /// code d'appairage et le transport nécessaires pour retenter la connexion.
-    let onReconnect: () async -> Void
+    /// Doc utilisateur P9 — Supabase Realtime se reconnecte déjà tout seul pour toute coupure
+    /// passagère ; ce bouton ne sert que si la perte est réelle (hôte arrêté, coupure prolongée).
+    /// Retourne si la tentative a abouti, pour qu'un échec affiche un vrai message plutôt qu'un
+    /// aller-retour silencieux vers l'état initial.
+    let onReconnect: () async -> Bool
     @State private var isReconnecting = false
+    @State private var reconnectFailed = false
     @State private var draftTexts: [Participant.ID: String] = [:]
     @State private var closedParticipantID: Participant.ID?
     @FocusState private var focusedParticipantID: Participant.ID?
@@ -56,11 +57,18 @@ struct SharedMatchView: View {
                         Text("Connexion à l'hôte perdue. Le tableau affiché est le dernier reçu.")
                             .font(.label)
                             .foregroundStyle(.semanticError)
+                        if reconnectFailed {
+                            Text("Toujours pas de connexion. Réessaie dans un instant.")
+                                .font(.bodySmall)
+                                .foregroundStyle(.textTertiary)
+                        }
                         Button(isReconnecting ? "Reconnexion…" : "Se reconnecter") {
                             Task {
                                 isReconnecting = true
-                                await onReconnect()
+                                reconnectFailed = false
+                                let succeeded = await onReconnect()
                                 isReconnecting = false
+                                reconnectFailed = !succeeded
                             }
                         }
                         .disabled(isReconnecting)

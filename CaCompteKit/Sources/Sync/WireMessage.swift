@@ -1,8 +1,8 @@
 import Domain
 import Foundation
 
-/// Doc 09 — protocole applicatif unique, identique quel que soit le transport actif (Wi-Fi ou
-/// BLE, voir `Transport`). `welcome` porte le journal complet plutôt qu'un type d'instantané
+/// Doc 09 — protocole applicatif, indépendant du transport actif (`SupabaseTransport`, voir
+/// `TransportSession`). `welcome` porte le journal complet plutôt qu'un type d'instantané
 /// séparé : le pair qui rejoint appelle `MatchEngine.replay(log:)`, la même fonction qu'au
 /// lancement de l'app — une seule façon de reconstruire un `MatchState`.
 public struct WireMessage: Codable, Sendable, Equatable {

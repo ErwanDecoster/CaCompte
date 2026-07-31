@@ -22,14 +22,6 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
-	<key>NSLocalNetworkUsageDescription</key>
-	<string>Ça Compte utilise le réseau local pour partager la partie en cours avec les appareils autour de la table. Aucune donnée ne quitte votre réseau.</string>
-	<key>NSBonjourServices</key>
-	<array>
-		<string>_cacompte._tcp</string>
-	</array>
-	<key>NSBluetoothAlwaysUsageDescription</key>
-	<string>Ça Compte utilise le Bluetooth pour partager la partie en cours quand aucun réseau Wi-Fi commun n'est disponible, et pour garder l'écran verrouillé à jour quand l'app est en arrière-plan.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Ça Compte utilise l'appareil photo pour scanner le code d'appairage d'une partie partagée.</string>
 	<key>CFBundleURLTypes</key>
@@ -61,8 +53,6 @@
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>
-		<string>bluetooth-central</string>
-		<string>bluetooth-peripheral</string>
 	</array>
 	<key>UILaunchScreen</key>
 	<dict/>

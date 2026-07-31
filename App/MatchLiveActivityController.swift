@@ -66,9 +66,9 @@ enum MatchLiveActivityController {
         }
     }
 
-    /// Doc utilisateur — remontée : l'app en arrière-plan coupe la connexion Wi-Fi côté pair (pas
-    /// d'entitlement réseau en tâche de fond, doc `JoinMatchView`) ; sans rien faire, l'écran
-    /// verrouillé continuait d'afficher le dernier score reçu comme s'il était toujours en direct.
+    /// Doc utilisateur — remontée : une connexion perdue côté pair (hôte arrêté, coupure réseau
+    /// prolongée) sans rien faire laissait l'écran verrouillé afficher le dernier score reçu comme
+    /// s'il était toujours en direct.
     /// Republie le même contenu marqué `isStale`, plutôt que de le deviner depuis `staleDate` seul
     /// (peu visible pour du contenu statique) — `refresh` efface le marqueur de lui-même dès que
     /// de nouveaux événements arrivent (reconnexion réussie).

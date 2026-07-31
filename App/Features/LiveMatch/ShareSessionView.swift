@@ -12,7 +12,6 @@ struct ShareSessionView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var errorMessage: String?
     @State private var isStopping = false
-    @State private var wifiAvailability = WiFiAvailability()
     /// Doc utilisateur P9 — remontée : pouvoir imposer « observateur uniquement » à la création
     /// (ou en cours) du partage. Ne rétrograde pas un contributeur déjà connecté (doc
     /// `LiveSession.setAllowsContributors`), seulement les prochaines connexions.
@@ -39,17 +38,9 @@ struct ShareSessionView: View {
     private var content: some View {
         if let code = model.pairingCode {
             List {
-                if !wifiAvailability.isAvailable {
-                    Section {
-                        Text("Le Wi-Fi semble désactivé : personne ne pourra te rejoindre tant qu'il ne l'est pas.")
-                            .font(.label)
-                            .foregroundStyle(.semanticError)
-                    }
-                }
-
                 Section {
                     VStack(spacing: Space.sm) {
-                        if let joinURL = JoinLink.url(matchID: model.state.matchID, pairingCode: code) {
+                        if let joinURL = JoinLink.url(pairingCode: code) {
                             QRCodeView(url: joinURL)
                                 .frame(width: 180, height: 180)
                                 .padding(.bottom, Space.xs)
@@ -61,7 +52,7 @@ struct ShareSessionView: View {
                             .font(.system(.largeTitle, design: .rounded, weight: .bold))
                             .monospacedDigit()
                             .tracking(4)
-                        Text("À scanner (bouton « Scanner un code » sur l'appareil qui rejoint) ou à saisir, sur le même Wi-Fi.")
+                        Text("À scanner (bouton « Scanner un code » sur l'appareil qui rejoint) ou à saisir — aucune connexion Wi-Fi commune n'est nécessaire, juste une connexion Internet des deux côtés.")
                             .font(.bodySmall)
                             .foregroundStyle(.textTertiary)
                             .multilineTextAlignment(.center)
@@ -118,7 +109,7 @@ struct ShareSessionView: View {
         } else if errorMessage != nil {
             EmptyState(
                 icon: "wifi.exclamationmark",
-                message: "Impossible de démarrer le partage. Vérifie que le Wi-Fi est activé et réessaie.",
+                message: "Impossible de démarrer le partage. Vérifie ta connexion Internet et réessaie.",
                 actionTitle: "Réessayer"
             ) {
                 Task { await startSharing() }

@@ -10,8 +10,9 @@ import Foundation
 ///   `MatchState` — c'est `LiveMatchModel` (couche app) qui rejoue `events` avec son propre
 ///   `MatchEngine`, exactement comme au lancement de l'app (doc 02).
 ///
-/// `LiveSession` ignore lequel de `WifiTransport` ou `BLETransport` (ADR-0014) est actif : elle
-/// ne parle qu'au protocole `Transport`.
+/// `LiveSession` ne connaît que `TransportSession` (`send`/`incoming`), jamais les détails du
+/// transport sous-jacent (`SupabaseTransport`) — un seam qui a permis de remplacer entièrement le
+/// transport (Wi-Fi/BLE → Supabase Realtime, doc P9) sans toucher à cet arbitrage.
 public actor LiveSession {
     public enum SessionError: Error, Sendable, Equatable {
         case notConnected

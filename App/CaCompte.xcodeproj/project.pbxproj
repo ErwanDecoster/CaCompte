@@ -54,8 +54,8 @@
 		C227FDDBD1C6825CFF496CBA /* AvatarPhotoProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 052D480A99B3CEFE2DC01CC6 /* AvatarPhotoProcessor.swift */; };
 		C3AA6E864D68EC394369D686 /* JoinLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BD054369BC077C799BBFF57 /* JoinLink.swift */; };
 		CC4C14AE1927D962679B0443 /* DeepLinkRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DE229A134D6300341412C0E /* DeepLinkRouter.swift */; };
-		D99C4416C12863B274B3BD12 /* WiFiAvailability.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACC2C52B613E48E0F72A930D /* WiFiAvailability.swift */; };
 		DDF0CF323C42A6717A2F2536 /* SharedMatchModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED88C4CDA8CFDA746AC9588D /* SharedMatchModel.swift */; };
+		A8A8DA3BF70AD6F17224FC8F /* MatchConnectionCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9DA809DE7377203DF8A1FC3 /* MatchConnectionCoordinator.swift */; };
 		EA83AEE01FBE39E611E4EAA6 /* Store in Frameworks */ = {isa = PBXBuildFile; productRef = 4169DC47B02D4B5A5F243DE9 /* Store */; };
 		ED9802FF72A9AD579FC068EF /* MatchLiveActivityController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08AE0320DC761E1775EBBD52 /* MatchLiveActivityController.swift */; };
 		F5C748596F7079EDC19CB3DA /* YamsSheetModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = BADA2645FCD7DF45BDBEF1A4 /* YamsSheetModel.swift */; };
@@ -120,7 +120,6 @@
 		A44F1408763A46ADA3A64F4D /* ArchivedMatchesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArchivedMatchesView.swift; sourceTree = "<group>"; };
 		AA1F1AA1301A3C0E002E85F9 /* CaCompte.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = CaCompte.entitlements; sourceTree = "<group>"; };
 		AAB3431F9771731267D9EC71 /* ResultsShareCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResultsShareCard.swift; sourceTree = "<group>"; };
-		ACC2C52B613E48E0F72A930D /* WiFiAvailability.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WiFiAvailability.swift; sourceTree = "<group>"; };
 		ACECD00F003F1196DA804A2D /* ArchivedPlayersView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArchivedPlayersView.swift; sourceTree = "<group>"; };
 		B027CF6BA8617B3C6DF58619 /* CaCompte.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CaCompte.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B18BE4332F79E7E4167B768D /* RoundHistoryView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RoundHistoryView.swift; sourceTree = "<group>"; };
@@ -135,6 +134,7 @@
 		E5423929B035410EC56001A4 /* MatchWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MatchWidget.swift; sourceTree = "<group>"; };
 		E6251C1B9A134F5DA88F87E3 /* MatchContinuation.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MatchContinuation.swift; sourceTree = "<group>"; };
 		ED88C4CDA8CFDA746AC9588D /* SharedMatchModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SharedMatchModel.swift; sourceTree = "<group>"; };
+		A9DA809DE7377203DF8A1FC3 /* MatchConnectionCoordinator.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MatchConnectionCoordinator.swift; sourceTree = "<group>"; };
 		EFAAD36FF72BABA0EA7DA7CC /* BeloteRoundView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BeloteRoundView.swift; sourceTree = "<group>"; };
 		F22BB7F6F50FBAC4AD75FF39 /* MatchSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MatchSetupView.swift; sourceTree = "<group>"; };
 		F6F181867B7C700F8A482072 /* CaCompteWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = CaCompteWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -266,7 +266,6 @@
 				8E82C29D2632630F7291EE5F /* CaCompteApp.swift */,
 				FF107113EE23329E5E56C240 /* Features */,
 				391E62B92C7976A946FCEB9F /* Resources */,
-				ACC2C52B613E48E0F72A930D /* WiFiAvailability.swift */,
 				3BD054369BC077C799BBFF57 /* JoinLink.swift */,
 				8DE229A134D6300341412C0E /* DeepLinkRouter.swift */,
 				E6251C1B9A134F5DA88F87E3 /* MatchContinuation.swift */,
@@ -299,6 +298,7 @@
 				7A4AA12BF22916E17C286D79 /* ShareSessionView.swift */,
 				ED88C4CDA8CFDA746AC9588D /* SharedMatchModel.swift */,
 				4A9F5EDAC041F9E23EED5B5D /* SharedMatchView.swift */,
+				A9DA809DE7377203DF8A1FC3 /* MatchConnectionCoordinator.swift */,
 				D90C5383931C73460C54F4F3 /* QRCodeView.swift */,
 				B18BE4332F79E7E4167B768D /* RoundHistoryView.swift */,
 			);
@@ -487,8 +487,8 @@
 				84D74211B8E5780DC8B5E153 /* ShareSessionView.swift in Sources */,
 				DDF0CF323C42A6717A2F2536 /* SharedMatchModel.swift in Sources */,
 				399BEAEE80010D1CAE1085DA /* SharedMatchView.swift in Sources */,
+				A8A8DA3BF70AD6F17224FC8F /* MatchConnectionCoordinator.swift in Sources */,
 				A7595B419E2B54F8BE8C4D84 /* JoinMatchView.swift in Sources */,
-				D99C4416C12863B274B3BD12 /* WiFiAvailability.swift in Sources */,
 				C3AA6E864D68EC394369D686 /* JoinLink.swift in Sources */,
 				CC4C14AE1927D962679B0443 /* DeepLinkRouter.swift in Sources */,
 				FECF6A04A5074AE19E39062F /* MatchContinuation.swift in Sources */,
