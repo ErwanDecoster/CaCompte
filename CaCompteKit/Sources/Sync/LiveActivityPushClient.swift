@@ -29,12 +29,19 @@ public enum LiveActivityPushClient {
     /// `Activity.pushTokenUpdates` (création de la Live Activity, ou rotation ultérieure par
     /// iOS) : `upsert` sur la clé primaire `(match_id, device_id)` remplace toujours l'ancien
     /// jeton plutôt que d'en accumuler plusieurs par appareil.
+    ///
+    /// `returning: .minimal` explicite — sans policy `select` pour l'anon sur cette table
+    /// (volontaire, `supabase/migrations`), le comportement par défaut de `upsert`
+    /// (`.representation`, qui tente de relire la ligne pour construire la réponse) échoue avec
+    /// une erreur RLS trompeuse même quand l'insert a réellement eu lieu.
     public static func registerToken(matchID: UUID, deviceID: String, pushToken: String) async {
+        print("[LiveActivityPushClient] BUILD-MARKER-MINIMAL-FIX registerToken called")
         do {
             try await client.from("cacompte_live_activity_tokens")
                 .upsert(
                     TokenRow(matchID: matchID, deviceID: deviceID, pushToken: pushToken),
-                    onConflict: "match_id,device_id"
+                    onConflict: "match_id,device_id",
+                    returning: .minimal
                 )
                 .execute()
             print("[LiveActivityPushClient] registerToken OK match=\(matchID) device=\(deviceID)")

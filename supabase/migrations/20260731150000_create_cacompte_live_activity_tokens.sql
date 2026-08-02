@@ -16,10 +16,16 @@ alter table public.cacompte_live_activity_tokens enable row level security;
 
 -- Doc utilisateur — un appareil n'a besoin que d'écrire son propre jeton (à l'ouverture de la
 -- Live Activity, puis à chaque rotation de jeton signalée par `Activity.pushTokenUpdates`) ;
--- aucun client (anon) n'a besoin de les lire — seule la fonction Edge le fait, via la clé
--- `service_role` qui contourne RLS. Pas de politique `select` pour l'anon : ce n'est pas un secret
--- critique (un jeton de push ActivityKit ne vaut que pour cette Live Activity précise), mais
--- inutile de l'exposer aux autres appareils d'une même partie.
+-- `service_role` (fonction Edge) contourne RLS de toute façon. La policy `select` ci-dessous est
+-- requise même si l'app ne lit jamais cette table : Postgres a besoin de pouvoir évaluer une
+-- policy SELECT pour détecter une ligne en conflit lors d'un `INSERT ... ON CONFLICT DO UPDATE`
+-- (l'`upsert` utilisé par `LiveActivityPushClient.registerToken`), sans quoi RLS le bloque même
+-- quand aucun conflit ne survient réellement.
+create policy "anon can select own cacompte_live_activity_tokens" on public.cacompte_live_activity_tokens
+    for select
+    to anon
+    using (true);
+
 create policy "anon can upsert own cacompte_live_activity_tokens" on public.cacompte_live_activity_tokens
     for insert
     to anon
