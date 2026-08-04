@@ -4,6 +4,7 @@ import Domain
 import Store
 import SwiftData
 import SwiftUI
+import UIKit
 
 struct LiveMatchView: View {
     @State private var model: LiveMatchModel
@@ -153,6 +154,12 @@ struct LiveMatchView: View {
             guard let newValue else { return }
             model.focus(on: newValue)
         }
+        // Doc 09 « Fin de partie » — une manche acceptée d'un contributeur distant n'est plus
+        // reçue directement par ce modèle (portée par `LiveShareCoordinator`, qui survit à cet
+        // écran) : ce jeton republié à chaque événement distant est ce qui déclenche le rechargement.
+        .onChange(of: LiveShareCoordinator.shared.remoteEventToken) { _, _ in
+            model.refreshFromRemote()
+        }
         .confirmationDialog(
             "Terminer la partie ?",
             isPresented: $isConfirmingManualEnd,
@@ -176,7 +183,9 @@ struct LiveMatchView: View {
             Text("La partie sera classée comme abandonnée dans l'historique, avec le classement atteint jusque-là. Cette action ne peut pas être annulée.")
         }
         .sheet(isPresented: $isPresentingShareSession) {
-            ShareSessionView(model: model)
+            ShareSessionView { allowsContributors in
+                try await model.startSharing(deviceName: UIDevice.current.name, allowsContributors: allowsContributors)
+            }
         }
         .sheet(isPresented: $isPresentingRoundHistory) {
             RoundHistoryView(state: model.state, definition: model.definition)

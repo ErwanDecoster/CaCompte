@@ -23,17 +23,16 @@ final class LiveMatchModel {
     let definition: GameDefinition
     private let rules: any GameRules
     private let match: MatchRecord
+    private let context: ModelContext
     private let repository: MatchRepository
     private let catalog: GameCatalog
 
     // MARK: - Doc 09 « Partie partagée » — cet appareil est toujours l'hôte quand il partage,
     // puisque `LiveMatchModel` n'existe que pour une partie qui a un `MatchRecord` local. Un pair
-    // qui rejoint utilise `SharedMatchModel`, pas celui-ci.
-    private(set) var pairingCode: String?
-    private(set) var connectedPeers: [LiveSession.ConnectedPeer] = []
-    private var session: LiveSession?
-    private var transport: SupabaseTransport?
-    private var sharingTasks: [Task<Void, Never>] = []
+    // qui rejoint utilise `SharedMatchModel`, pas celui-ci. Le partage lui-même est porté par
+    // `LiveShareCoordinator` (doc 09 « Fin de partie », révisé) — il survit à ce modèle, qui se
+    // recrée à chaque nouvelle partie, plutôt que de mourir avec lui.
+    private var shareCoordinator: LiveShareCoordinator { .shared }
 
     /// Doc utilisateur : sans ça, une manche saisie par un contributeur distant se contente de
     /// faire monter les totaux sans qu'on comprenne pourquoi — l'hôte doit être notifié, pas
@@ -48,16 +47,23 @@ final class LiveMatchModel {
     private(set) var roundExplanationMessage: String?
     private var roundExplanationClearTask: Task<Void, Never>?
 
-    var isSharing: Bool { session != nil }
+    var isSharing: Bool { shareCoordinator.attachedMatchID == match.id }
+    var pairingCode: String? { isSharing ? shareCoordinator.pairingCode : nil }
+    var connectedPeers: [LiveSession.ConnectedPeer] { isSharing ? shareCoordinator.connectedPeers : [] }
 
     init(match: MatchRecord, context: ModelContext, catalog: GameCatalog) throws {
         self.match = match
+        self.context = context
         self.repository = MatchRepository(context: context)
         self.catalog = catalog
         self.definition = try catalog.definition(for: match.gameID, version: match.rulesVersion)
         self.rules = try catalog.rules(for: match.gameID, version: match.rulesVersion)
         self.state = try repository.loadState(match, catalog: catalog)
         MatchLiveActivityController.refresh(definition: definition, rules: rules, state: state, isAuthoritative: true)
+        // Doc 09 « Fin de partie » — no-op si aucune session n'est active, no-op si cette partie
+        // est déjà attachée ; sinon c'est cet appel qui fait qu'une nouvelle partie rejoint
+        // automatiquement une session déjà en cours, sans repasser par « Partager en direct ».
+        Task { await LiveShareCoordinator.shared.attach(match: match, context: context) }
     }
 
     var participants: [Participant] {
@@ -186,73 +192,49 @@ final class LiveMatchModel {
 
     // MARK: - Doc 09 « Partie partagée »
 
-    /// Démarre le partage : publie la partie via Supabase Realtime (`SupabaseTransport`, remplace
-    /// Wi-Fi/BLE — voir sa doc), affecte un code d'appairage à 6 chiffres, arbitre les
-    /// propositions des contributeurs distants (`LiveSession`). `deviceName` vient de l'appelant
-    /// (`UIDevice.current.name`) — ni `Sync` ni `CaCompteKit` ne peuvent lire `UIDevice` (la
-    /// cible compile aussi pour macOS).
+    /// Démarre le partage — ou, si une session est déjà active (une autre partie partagée plus
+    /// tôt dans la soirée), y rattache simplement cette partie (`LiveShareCoordinator`). Publie la
+    /// partie via Supabase Realtime (`SupabaseTransport`, remplace Wi-Fi/BLE — voir sa doc),
+    /// affecte un code d'appairage à 6 chiffres, arbitre les propositions des contributeurs
+    /// distants (`LiveSession`). `deviceName` vient de l'appelant (`UIDevice.current.name`) — ni
+    /// `Sync` ni `CaCompteKit` ne peuvent lire `UIDevice` (la cible compile aussi pour macOS).
     func startSharing(deviceName: String, allowsContributors: Bool = true) async throws {
-        let newSession = LiveSession(deviceID: DeviceIdentity.current, catalog: catalog)
-        let code = LiveSession.generatePairingCode()
-        try await newSession.startHosting(log: repository.currentLog(for: match), pairingCode: code, allowsContributors: allowsContributors)
-
-        let newTransport = SupabaseTransport(deviceID: DeviceIdentity.current, deviceName: deviceName)
-        try await newTransport.advertise(matchID: state.matchID, gameID: match.gameID, participantCount: participants.count, pairingCode: code)
-
-        session = newSession
-        transport = newTransport
-        pairingCode = code
-
-        let acceptTask = Task { [weak self] in
-            for await incoming in newTransport.acceptIncoming() {
-                guard self != nil else { return }
-                await newSession.acceptConnection(incoming)
-            }
-        }
-        let eventsTask = Task { [weak self] in
-            for await stamped in newSession.events {
-                guard let self else { return }
-                if let newState = try? self.repository.appendRemoteEvent(stamped, to: self.match, catalog: self.catalog) {
-                    self.state = newState
-                    self.announceIfRemote(stamped)
-                }
-            }
-        }
-        let peersTask = Task { [weak self] in
-            for await peers in newSession.peerUpdates {
-                self?.connectedPeers = peers
-            }
-        }
-        sharingTasks = [acceptTask, eventsTask, peersTask]
+        try await shareCoordinator.startSharing(match: match, context: context, deviceName: deviceName, allowsContributors: allowsContributors)
     }
 
     /// Doc utilisateur P9 — s'applique aux prochaines connexions, pas aux contributeurs déjà
     /// connectés (voir `LiveSession.setAllowsContributors`).
     func setAllowsContributors(_ allowed: Bool) async {
-        await session?.setAllowsContributors(allowed)
+        await shareCoordinator.setAllowsContributors(allowed)
     }
 
+    /// Doc 09 « Fin de partie » — arrête toute la session de partage, pas seulement cette partie :
+    /// c'est le seul geste qui la termine désormais (elle ne s'arrête plus automatiquement à la
+    /// fin d'une partie).
     func stopSharing() async {
-        // Doit fermer réellement chaque connexion pair (pas seulement oublier la référence
-        // locale) : sans ça, un pair resterait indéfiniment listé comme connecté chez lui-même,
-        // faute d'avoir jamais vu son socket se fermer (bug observé en recette).
-        await session?.stopHosting()
-        for task in sharingTasks { task.cancel() }
-        sharingTasks = []
-        await transport?.stopAdvertising()
-        transport = nil
-        session = nil
-        pairingCode = nil
-        connectedPeers = []
+        await shareCoordinator.stopSharing()
+    }
+
+    /// Doc 09 « Fin de partie » — `LiveMatchView` appelle ceci sur `.onChange` du jeton republié
+    /// par `LiveShareCoordinator` à chaque manche acceptée d'un contributeur distant. Recharge
+    /// l'état depuis le repository (déjà persisté par le coordinateur) seulement si l'événement
+    /// concerne bien la partie affichée par ce modèle — plusieurs `LiveMatchModel` peuvent
+    /// coexister brièvement pendant une transition d'écran, un seul doit réagir.
+    func refreshFromRemote() {
+        guard shareCoordinator.remoteEventMatchID == match.id,
+              let newState = try? repository.loadState(match, catalog: catalog) else { return }
+        state = newState
+        if shareCoordinator.remoteEventIsRoundCommit, let deviceID = shareCoordinator.remoteEventDeviceID {
+            announceIfRemote(deviceID: deviceID)
+        }
     }
 
     /// Doc utilisateur — signale qu'une manche vient d'un contributeur distant plutôt que de
-    /// laisser les totaux changer sans explication. Ignore les événements qui viennent de cet
-    /// appareil lui-même (ses propres manches n'ont pas besoin de s'auto-annoncer).
-    private func announceIfRemote(_ stamped: StampedEvent) {
-        guard case .roundCommitted = stamped.event else { return }
-        guard stamped.deviceID != DeviceIdentity.current else { return }
-        let name = connectedPeers.first { $0.deviceID == stamped.deviceID }?.deviceName ?? "Un appareil"
+    /// laisser les totaux changer sans explication. `LiveShareCoordinator` ne republie jamais les
+    /// propres manches de l'hôte via ce chemin (`session.events` ne porte que les propositions
+    /// acceptées d'un pair, jamais les écritures locales), donc pas de filtre à refaire ici.
+    private func announceIfRemote(deviceID: String) {
+        let name = connectedPeers.first { $0.deviceID == deviceID }?.deviceName ?? "Un appareil"
         remoteActivityMessage = "\(name) a ajouté une manche."
         remoteActivityClearTask?.cancel()
         remoteActivityClearTask = Task { [weak self] in
@@ -262,21 +244,13 @@ final class LiveMatchModel {
         }
     }
 
-    /// Après chaque écriture locale de l'hôte : `LiveSession` doit refléter le journal réel pour
-    /// arbitrer juste, et rediffuser aux pairs connectés ce qui vient d'être ajouté (doc 09).
-    /// Si cette écriture conclut la partie (fin normale, fin manuelle, abandon), le partage
-    /// s'arrête automatiquement une fois la diffusion faite : sans ça, l'hôte continuait
-    /// d'annoncer une partie terminée, toujours visible et rejoignable depuis un autre appareil
-    /// (bug observé en recette), et les pairs restaient connectés à une partie qui n'existe plus.
+    /// Après chaque écriture locale de l'hôte : la session doit refléter le journal réel pour
+    /// arbitrer juste, et rediffuser aux pairs connectés ce qui vient d'être ajouté (doc 09). Ne
+    /// touche plus jamais à l'arrêt du partage — même si cette écriture conclut la partie (fin
+    /// normale, fin manuelle, abandon), la session continue : c'est justement ce qui permet
+    /// d'enchaîner sur une autre partie sans se réappairer (doc 09 « Fin de partie », révisé).
     private func syncSharedLogIfNeeded() {
-        guard let session else { return }
-        guard let log = try? repository.currentLog(for: match) else { return }
-        let matchJustConcluded = isConcluded
-        Task {
-            try? await session.syncHostLog(log)
-            if matchJustConcluded {
-                await self.stopSharing()
-            }
-        }
+        guard isSharing else { return }
+        Task { await shareCoordinator.syncLog(for: match.id) }
     }
 }

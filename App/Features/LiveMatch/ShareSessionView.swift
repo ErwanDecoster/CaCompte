@@ -1,14 +1,20 @@
 import DesignSystem
 import Sync
 import SwiftUI
-import UIKit
 
-/// Doc 09 — l'hôte annonce la partie, affiche le code d'appairage et la liste des appareils
-/// connectés. Fermer cette feuille n'arrête pas le partage : c'est une fenêtre sur une session
-/// qui continue en arrière-plan, jusqu'à « Arrêter le partage » explicite (doc 09 « Dégradation »
-/// — le partage est un supplément, jamais un prérequis pour continuer à jouer).
+/// Doc 09 — l'hôte annonce la session (une ou plusieurs parties, doc 09 « Fin de partie »),
+/// affiche le code d'appairage et la liste des appareils connectés. Fermer cette feuille n'arrête
+/// pas le partage : c'est une fenêtre sur une session qui continue en arrière-plan, jusqu'à
+/// « Arrêter le partage » explicite (doc 09 « Dégradation » — le partage est un supplément, jamais
+/// un prérequis pour continuer à jouer).
+///
+/// Découplée de `LiveMatchModel` (lit `LiveShareCoordinator.shared` directement) pour rester
+/// utilisable même hors d'un écran de partie — depuis `GamesTabView`, entre deux parties d'une
+/// même session (doc 09 « Fin de partie »). `startAction` n'est fourni que par `LiveMatchView` :
+/// c'est ce qui distingue « ouvrir cet écran pour démarrer un tout nouveau partage » de « ouvrir
+/// cet écran pour observer/arrêter une session déjà en cours ».
 struct ShareSessionView: View {
-    let model: LiveMatchModel
+    var startAction: ((_ allowsContributors: Bool) async throws -> Void)? = nil
     @Environment(\.dismiss) private var dismiss
     @State private var errorMessage: String?
     @State private var isStopping = false
@@ -16,6 +22,7 @@ struct ShareSessionView: View {
     /// (ou en cours) du partage. Ne rétrograde pas un contributeur déjà connecté (doc
     /// `LiveSession.setAllowsContributors`), seulement les prochaines connexions.
     @State private var allowsContributors = true
+    private var coordinator: LiveShareCoordinator { .shared }
 
     var body: some View {
         NavigationStack {
@@ -28,7 +35,7 @@ struct ShareSessionView: View {
                     }
                 }
                 .task {
-                    guard !model.isSharing else { return }
+                    guard startAction != nil, !coordinator.isSharing else { return }
                     await startSharing()
                 }
         }
@@ -36,7 +43,7 @@ struct ShareSessionView: View {
 
     @ViewBuilder
     private var content: some View {
-        if let code = model.pairingCode {
+        if let code = coordinator.pairingCode {
             List {
                 Section {
                     VStack(spacing: Space.sm) {
@@ -65,7 +72,7 @@ struct ShareSessionView: View {
                     Toggle("Autoriser les contributeurs", isOn: $allowsContributors)
                         .tint(.brandInk)
                         .onChange(of: allowsContributors) { _, newValue in
-                            Task { await model.setAllowsContributors(newValue) }
+                            Task { await coordinator.setAllowsContributors(newValue) }
                         }
                     Text(
                         allowsContributors
@@ -77,11 +84,11 @@ struct ShareSessionView: View {
                 }
 
                 Section("Appareils connectés") {
-                    if model.connectedPeers.isEmpty {
+                    if coordinator.connectedPeers.isEmpty {
                         Text("En attente d'un appareil qui rejoint…")
                             .foregroundStyle(.textTertiary)
                     } else {
-                        ForEach(model.connectedPeers) { peer in
+                        ForEach(coordinator.connectedPeers) { peer in
                             HStack {
                                 Text(peer.deviceName)
                                     .foregroundStyle(.textPrimary)
@@ -98,7 +105,7 @@ struct ShareSessionView: View {
                     Button("Arrêter le partage", role: .destructive) {
                         Task {
                             isStopping = true
-                            await model.stopSharing()
+                            await coordinator.stopSharing()
                             isStopping = false
                             dismiss()
                         }
@@ -115,16 +122,24 @@ struct ShareSessionView: View {
                 Task { await startSharing() }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-        } else {
+        } else if startAction != nil {
             ProgressView("Démarrage du partage…")
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else {
+            // Doc 09 « Fin de partie » — ouvert depuis `GamesTabView` (`startAction == nil`) alors
+            // que la session vient de s'arrêter (ex. tap sur « Arrêter le partage » juste avant que
+            // cette feuille ne se ferme) : rien à démarrer depuis ici, seul un état de repli le
+            // temps que le bouton qui a ouvert cet écran disparaisse à son tour.
+            EmptyState(icon: "wifi.slash", message: "Aucune session partagée en cours.")
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
     }
 
     private func startSharing() async {
+        guard let startAction else { return }
         errorMessage = nil
         do {
-            try await model.startSharing(deviceName: UIDevice.current.name, allowsContributors: allowsContributors)
+            try await startAction(allowsContributors)
         } catch {
             errorMessage = error.localizedDescription
         }

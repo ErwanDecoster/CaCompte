@@ -18,6 +18,9 @@ public protocol TransportSession: Sendable {
 /// l'instantané de partie. Résolu via `cacompte_open_games` (Supabase) à partir d'un code d'appairage,
 /// plutôt que découvert par scan réseau/Bluetooth.
 public struct DiscoveredHost: Sendable, Identifiable, Equatable {
+    /// L'identifiant de la **session de partage** (`WireMessage.sessionID`), pas de la partie
+    /// courante — c'est lui qui adresse le canal Realtime (`session:<id>`), stable même si l'hôte
+    /// enchaîne une autre partie après coup (doc 09 « Fin de partie »).
     public let id: UUID
     public let deviceName: String
     public let gameID: String

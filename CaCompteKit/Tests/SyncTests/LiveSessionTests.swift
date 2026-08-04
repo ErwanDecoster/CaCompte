@@ -57,10 +57,10 @@ struct LiveSessionTests {
         let participants = [Participant(displayName: "Marion", seatIndex: 0), Participant(displayName: "Théo", seatIndex: 1)]
         let catalog = makeCatalog()
         let initialLog = makeInitialLog(participants: participants)
-        let matchID = initialLog[0].id // doc : `MatchEngine.replay` utilise l'id du premier événement comme matchID
+        let sessionID = UUID() // doc 09 « Fin de partie » : indépendant de la partie, fourni par l'appelant
 
         let host = LiveSession(deviceID: "host-device", catalog: catalog)
-        try await host.startHosting(log: initialLog, pairingCode: "042817")
+        try await host.startHosting(log: initialLog, sessionID: sessionID, pairingCode: "042817")
 
         let (hostChannel, peerChannel) = InMemoryChannel.pair()
         await host.acceptConnection(hostChannel)
@@ -68,7 +68,7 @@ struct LiveSessionTests {
         let peer = LiveSession(deviceID: "peer-device", catalog: catalog)
         try await peer.attachToHost(
             peerChannel,
-            matchID: matchID,
+            sessionID: sessionID,
             pairingCode: "042817",
             requestedRole: .contributor,
             deviceName: "Théo",
@@ -99,10 +99,10 @@ struct LiveSessionTests {
         let participants = [Participant(displayName: "Marion", seatIndex: 0)]
         let catalog = makeCatalog()
         let initialLog = makeInitialLog(participants: participants)
-        let matchID = initialLog[0].id
+        let sessionID = UUID()
 
         let host = LiveSession(deviceID: "host-device", catalog: catalog)
-        try await host.startHosting(log: initialLog, pairingCode: "042817")
+        try await host.startHosting(log: initialLog, sessionID: sessionID, pairingCode: "042817")
 
         let (hostChannel, peerChannel) = InMemoryChannel.pair()
         await host.acceptConnection(hostChannel)
@@ -110,7 +110,7 @@ struct LiveSessionTests {
         let observer = LiveSession(deviceID: "observer-device", catalog: catalog)
         try await observer.attachToHost(
             peerChannel,
-            matchID: matchID,
+            sessionID: sessionID,
             pairingCode: "042817",
             requestedRole: .observer,
             deviceName: "David",
@@ -129,10 +129,10 @@ struct LiveSessionTests {
         let participants = [Participant(displayName: "Marion", seatIndex: 0)]
         let catalog = makeCatalog(max: 10) // doc 04 : `ScoreEntrySpec.max`, vérifié par `validate` par défaut
         let initialLog = makeInitialLog(participants: participants)
-        let matchID = initialLog[0].id
+        let sessionID = UUID()
 
         let host = LiveSession(deviceID: "host-device", catalog: catalog)
-        try await host.startHosting(log: initialLog, pairingCode: "042817")
+        try await host.startHosting(log: initialLog, sessionID: sessionID, pairingCode: "042817")
 
         let (hostChannel, peerChannel) = InMemoryChannel.pair()
         await host.acceptConnection(hostChannel)
@@ -140,7 +140,7 @@ struct LiveSessionTests {
         let contributor = LiveSession(deviceID: "peer-device", catalog: catalog)
         try await contributor.attachToHost(
             peerChannel,
-            matchID: matchID,
+            sessionID: sessionID,
             pairingCode: "042817",
             requestedRole: .contributor,
             deviceName: "Théo",
@@ -153,5 +153,49 @@ struct LiveSessionTests {
 
         let rejections = await collectFirst(1, from: contributor.rejections)
         #expect(rejections.count == 1)
+    }
+
+    @Test("L'hôte peut changer de partie sans rompre la connexion d'un pair, ni changer la clé de chiffrement")
+    func switchMatchKeepsConnectionAndKey() async throws {
+        let participantsA = [Participant(displayName: "Marion", seatIndex: 0), Participant(displayName: "Théo", seatIndex: 1)]
+        let catalog = makeCatalog()
+        let initialLogA = makeInitialLog(participants: participantsA)
+        let sessionID = UUID()
+
+        let host = LiveSession(deviceID: "host-device", catalog: catalog)
+        try await host.startHosting(log: initialLogA, sessionID: sessionID, pairingCode: "042817")
+
+        let (hostChannel, peerChannel) = InMemoryChannel.pair()
+        await host.acceptConnection(hostChannel)
+
+        let peer = LiveSession(deviceID: "peer-device", catalog: catalog)
+        try await peer.attachToHost(
+            peerChannel,
+            sessionID: sessionID,
+            pairingCode: "042817",
+            requestedRole: .contributor,
+            deviceName: "Théo",
+            appVersion: "1.0"
+        )
+        _ = await collectFirst(1, from: peer.events) // welcome de la partie A
+
+        // Doc 09 « Fin de partie » — l'hôte enchaîne une nouvelle partie (jeu rejoué ou différent)
+        // sans jamais rouvrir la connexion ni le canal : même `sessionID`, même code, mêmes pairs.
+        let participantsB = [Participant(displayName: "Marion", seatIndex: 0), Participant(displayName: "Théo", seatIndex: 1)]
+        let initialLogB = makeInitialLog(participants: participantsB)
+        try await host.switchMatch(log: initialLogB)
+
+        // Le pair reçoit le nouveau journal via `matchChanged`, pas `events` (qui ne porte que les
+        // propositions distantes acceptées).
+        let changedLogs = await collectFirst(1, from: peer.matchChanged)
+        #expect(changedLogs.first?.map(\.event) == initialLogB.map(\.event))
+
+        // La clé de chiffrement n'a pas changé : le pair peut continuer à proposer des manches sur
+        // la nouvelle partie sans se réappairer.
+        let draft = RoundDraft(index: 0, inputs: participantsB.map { ScoreInput(participantID: $0.id, rawValue: 5) })
+        try await peer.propose(.roundCommitted(draft))
+
+        let hostRoundEvents = await collectFirst(1, from: host.events)
+        #expect(hostRoundEvents[0].event == .roundCommitted(draft))
     }
 }

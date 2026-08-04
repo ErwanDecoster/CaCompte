@@ -15,11 +15,14 @@ enum SessionCrypto {
         String(format: "%06d", Int.random(in: 0...999_999))
     }
 
-    /// HKDF-SHA256 : le `matchID` sert de sel, ce qui garantit une clé différente par partie même
-    /// si deux hôtes choisissent le même code par coïncidence.
-    static func deriveKey(pairingCode: String, matchID: UUID) -> SymmetricKey {
+    /// HKDF-SHA256 : le `sessionID` sert de sel, ce qui garantit une clé différente par session
+    /// même si deux hôtes choisissent le même code par coïncidence. Salé par la session — stable
+    /// tant qu'elle dure — et non par la partie courante : une session peut enchaîner plusieurs
+    /// parties (doc 09 « Fin de partie ») sans que la clé ne change, donc sans qu'un pair déjà
+    /// connecté ait besoin de se réappairer entre deux parties.
+    static func deriveKey(pairingCode: String, sessionID: UUID) -> SymmetricKey {
         let inputKeyMaterial = SymmetricKey(data: Data(pairingCode.utf8))
-        let salt = Data(matchID.uuidString.utf8)
+        let salt = Data(sessionID.uuidString.utf8)
         let info = Data("cacompte.livesession.v1".utf8)
         return HKDF<SHA256>.deriveKey(inputKeyMaterial: inputKeyMaterial, salt: salt, info: info, outputByteCount: 32)
     }

@@ -207,13 +207,14 @@ transportent aussi bien l'une que l'autre.
 ```swift
 public struct WireMessage: Codable, Sendable {
     public let protocolVersion: Int          // 1
-    public let matchID: UUID
+    public let sessionID: UUID               // la session de partage, pas la partie courante — voir « Fin de partie »
     public let kind: Kind
 
     public enum Kind: Codable, Sendable {
         case hello(deviceName: String, appVersion: String, platform: Platform, role: Role, deviceID: String)
         case welcome(log: [StampedEvent], role: Role)   // hôte → nouveau pair, journal complet
         case events([StampedEvent])                     // diffusion
+        case matchChanged(log: [StampedEvent])           // hôte → tous les pairs déjà connectés, nouvelle partie
         case proposal([StampedEvent])                    // contributeur → hôte
         case rejection(eventID: UUID, reason: String)
         case heartbeat(lamport: UInt64)
@@ -292,13 +293,38 @@ qu'il ait quitté l'écran (bug trouvé en recette sur appareils réels). Symét
 `LiveSession.stopHosting()` (hôte) prévient chaque pair connecté puis ferme chaque connexion une
 par une, pour la même raison.
 
-**Fin de partie.** Une partie qui se conclut (fin normale, fin manuelle, abandon) arrête
-automatiquement le partage côté hôte, juste après avoir diffusé l'état final aux pairs
-connectés. Une première version ne le faisait pas : l'hôte continuait d'annoncer la partie sur
-le réseau — visible et rejoignable depuis un autre appareil — longtemps après sa fin (bug trouvé
-en recette). Côté pair, `SharedMatchView` distingue ce cas (« La partie est terminée. ») d'une
-vraie perte de connexion (« Connexion à l'hôte perdue. ») via le statut du dernier `MatchState`
-reçu — les deux se traduisent par la même coupure de connexion, mais une seule est un problème.
+**Fin de partie (révisé — la session survit à la partie).** Une session de partage n'est plus
+liée à une seule partie : l'hôte peut enchaîner plusieurs parties (même jeu rejoué ou jeu
+différent) sans jamais rompre la connexion des pairs, rouvrir le canal Realtime, ni changer de
+code d'appairage. Une partie qui se conclut (fin normale, fin manuelle, abandon) diffuse son état
+final aux pairs connectés, exactement comme avant, mais **n'arrête plus automatiquement le
+partage** — c'était le comportement d'une première version, qui empêchait justement d'enchaîner
+sur une autre partie sans se réappairer. Seul un geste explicite (« Arrêter le partage »,
+`ShareSessionView`) termine désormais une session.
+
+Techniquement, ceci sépare deux identifiants qui étaient confondus jusqu'ici : `sessionID`
+(`WireMessage.sessionID`, stable pour toute la durée de la session — c'est lui qui adresse le
+canal Realtime `session:<sessionID>` et la ligne `cacompte_open_games`) et `matchID`
+(`MatchState.matchID`, propre à la partie affichée à un instant donné). La clé de chiffrement
+(`SessionCrypto.deriveKey`) est désormais salée par `sessionID`, pas par `matchID` — sans ce
+changement, l'hôte n'aurait pas pu chiffrer le message annonçant une nouvelle partie avec une clé
+que le pair connaît déjà.
+
+Quand l'hôte lance une nouvelle partie pendant qu'une session est active
+(`LiveShareCoordinator.attach`), `LiveSession.switchMatch` remplace l'état arbitré et diffuse
+`WireMessage.Kind.matchChanged(log:)` à tous les pairs déjà connectés — contrairement à `welcome`,
+qui ne sert qu'au pair qui vient de rejoindre. Côté pair, `SharedMatchModel` repart d'un journal
+vide avant de rejouer ce nouveau journal (`log` n'a aucun événement en commun avec la partie
+précédente). `isHostConnected` (vraie perte de connexion) et `isConcluded` (partie terminée, dérivé
+du `MatchState` affiché) restent deux notions indépendantes : `SharedMatchView` distingue toujours
+« La partie est terminée. » d'une vraie coupure (« Connexion à l'hôte perdue. »), mais la première
+ne déclenche plus la seconde.
+
+Le partage lui-même (`LiveSession`/`SupabaseTransport`/le code d'appairage) est porté côté hôte par
+`LiveShareCoordinator`, un singleton app-lifetime — calqué sur `MatchConnectionCoordinator` côté
+pair —, plutôt que par `LiveMatchModel`, qui se recrée à chaque nouvelle partie. C'est ce
+découplage qui permet à la session de survivre à la fermeture de l'écran de la partie qui l'a
+démarrée.
 
 **Crash au premier plan après une mise en arrière-plan.** `NWListener`/`NWConnection` exposent
 leur changement d'état via un `stateUpdateHandler` **persistant** : il continue de recevoir des

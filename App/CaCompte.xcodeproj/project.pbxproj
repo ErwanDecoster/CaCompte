@@ -56,6 +56,7 @@
 		CC4C14AE1927D962679B0443 /* DeepLinkRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DE229A134D6300341412C0E /* DeepLinkRouter.swift */; };
 		DDF0CF323C42A6717A2F2536 /* SharedMatchModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED88C4CDA8CFDA746AC9588D /* SharedMatchModel.swift */; };
 		A8A8DA3BF70AD6F17224FC8F /* MatchConnectionCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9DA809DE7377203DF8A1FC3 /* MatchConnectionCoordinator.swift */; };
+		CC6D4E2BB43A69AB79637081 /* LiveShareCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15E03711B56AB6A5F9F7A288 /* LiveShareCoordinator.swift */; };
 		EA83AEE01FBE39E611E4EAA6 /* Store in Frameworks */ = {isa = PBXBuildFile; productRef = 4169DC47B02D4B5A5F243DE9 /* Store */; };
 		ED9802FF72A9AD579FC068EF /* MatchLiveActivityController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08AE0320DC761E1775EBBD52 /* MatchLiveActivityController.swift */; };
 		F5C748596F7079EDC19CB3DA /* YamsSheetModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = BADA2645FCD7DF45BDBEF1A4 /* YamsSheetModel.swift */; };
@@ -135,6 +136,7 @@
 		E6251C1B9A134F5DA88F87E3 /* MatchContinuation.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MatchContinuation.swift; sourceTree = "<group>"; };
 		ED88C4CDA8CFDA746AC9588D /* SharedMatchModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SharedMatchModel.swift; sourceTree = "<group>"; };
 		A9DA809DE7377203DF8A1FC3 /* MatchConnectionCoordinator.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MatchConnectionCoordinator.swift; sourceTree = "<group>"; };
+		15E03711B56AB6A5F9F7A288 /* LiveShareCoordinator.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LiveShareCoordinator.swift; sourceTree = "<group>"; };
 		EFAAD36FF72BABA0EA7DA7CC /* BeloteRoundView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BeloteRoundView.swift; sourceTree = "<group>"; };
 		F22BB7F6F50FBAC4AD75FF39 /* MatchSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MatchSetupView.swift; sourceTree = "<group>"; };
 		F6F181867B7C700F8A482072 /* CaCompteWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = CaCompteWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -299,6 +301,7 @@
 				ED88C4CDA8CFDA746AC9588D /* SharedMatchModel.swift */,
 				4A9F5EDAC041F9E23EED5B5D /* SharedMatchView.swift */,
 				A9DA809DE7377203DF8A1FC3 /* MatchConnectionCoordinator.swift */,
+				15E03711B56AB6A5F9F7A288 /* LiveShareCoordinator.swift */,
 				D90C5383931C73460C54F4F3 /* QRCodeView.swift */,
 				B18BE4332F79E7E4167B768D /* RoundHistoryView.swift */,
 			);
@@ -488,6 +491,7 @@
 				DDF0CF323C42A6717A2F2536 /* SharedMatchModel.swift in Sources */,
 				399BEAEE80010D1CAE1085DA /* SharedMatchView.swift in Sources */,
 				A8A8DA3BF70AD6F17224FC8F /* MatchConnectionCoordinator.swift in Sources */,
+				CC6D4E2BB43A69AB79637081 /* LiveShareCoordinator.swift in Sources */,
 				A7595B419E2B54F8BE8C4D84 /* JoinMatchView.swift in Sources */,
 				C3AA6E864D68EC394369D686 /* JoinLink.swift in Sources */,
 				CC4C14AE1927D962679B0443 /* DeepLinkRouter.swift in Sources */,

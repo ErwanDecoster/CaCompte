@@ -23,6 +23,11 @@ struct GamesTabView: View {
     @State private var matchPendingAbandon: MatchRecord?
     @State private var isPresentingJoin = false
     @State private var joinPayloadForSheet: JoinLink.Payload?
+    /// Doc 09 « Fin de partie » — une session de partage démarrée depuis une partie survit à sa
+    /// fin (`LiveShareCoordinator`) : ce bouton laisse l'hôte la retrouver (code, pairs connectés,
+    /// « Arrêter le partage ») même en revenant ici entre deux parties, sans avoir à en rouvrir
+    /// une pour y accéder.
+    @State private var isPresentingActiveShare = false
 
     /// Distance de glissement du doigt (pas du décalage de contenu) avant d'activer la
     /// recherche. Un tiré volontaire depuis le haut, quand la barre de recherche est déjà
@@ -84,6 +89,15 @@ struct GamesTabView: View {
             }
             .navigationTitle("Jeux")
             .toolbar {
+                if LiveShareCoordinator.shared.isSharing {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button {
+                            isPresentingActiveShare = true
+                        } label: {
+                            Label("Session partagée en cours", systemImage: "wifi.circle.fill")
+                        }
+                    }
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
                         isPresentingJoin = true
@@ -129,6 +143,9 @@ struct GamesTabView: View {
             }
             .sheet(isPresented: $isPresentingJoin) {
                 JoinMatchView(catalog: catalog, initialPayload: joinPayloadForSheet)
+            }
+            .sheet(isPresented: $isPresentingActiveShare) {
+                ShareSessionView(startAction: nil)
             }
             // Doc utilisateur — un lien `cacompte://` ouvert depuis l'appareil photo système
             // arrive ici, potentiellement alors qu'on est sur un autre onglet ou déjà dans un

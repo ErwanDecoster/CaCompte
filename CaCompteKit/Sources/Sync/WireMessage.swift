@@ -7,12 +7,15 @@ import Foundation
 /// lancement de l'app — une seule façon de reconstruire un `MatchState`.
 public struct WireMessage: Codable, Sendable, Equatable {
     public let protocolVersion: Int
-    public let matchID: UUID
+    /// Identifiant de la **session de partage**, stable tant qu'elle dure — pas de la partie
+    /// courante (`matchID`), qui peut changer plusieurs fois sans jamais rouvrir la connexion ni
+    /// changer de clé (doc 09 « Fin de partie »).
+    public let sessionID: UUID
     public let kind: Kind
 
-    public init(protocolVersion: Int = 1, matchID: UUID, kind: Kind) {
+    public init(protocolVersion: Int = 1, sessionID: UUID, kind: Kind) {
         self.protocolVersion = protocolVersion
-        self.matchID = matchID
+        self.sessionID = sessionID
         self.kind = kind
     }
 
@@ -28,6 +31,12 @@ public struct WireMessage: Codable, Sendable, Equatable {
         case hello(deviceName: String, appVersion: String, platform: Platform, role: Role, deviceID: String)
         case welcome(log: [StampedEvent], role: Role)
         case events([StampedEvent])
+        /// L'hôte enchaîne une nouvelle partie (même jeu rejoué ou jeu différent) sans rompre la
+        /// session : diffusé à tous les pairs déjà connectés, contrairement à `welcome` qui ne
+        /// sert qu'au pair qui vient de rejoindre. Porte le journal complet de la nouvelle partie
+        /// — un pair qui le reçoit doit repartir d'un journal vide plutôt que d'y ajouter les
+        /// événements (ils appartiennent à une autre partie).
+        case matchChanged(log: [StampedEvent])
         case proposal([StampedEvent])
         case rejection(eventID: UUID, reason: String)
         case heartbeat(lamport: UInt64)

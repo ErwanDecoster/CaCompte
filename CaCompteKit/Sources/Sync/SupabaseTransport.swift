@@ -6,8 +6,9 @@ import Supabase
 /// entre deux appareils physiques). La fiabilité de connexion/reconnexion est déléguée à un SDK
 /// websocket mature (Supabase Realtime) plutôt qu'à du code réseau/Bluetooth maison.
 ///
-/// **Un canal Realtime par partie** (`match:<matchID>`), où l'hôte et chaque pair rejoignent le
-/// même canal :
+/// **Un canal Realtime par session de partage** (`session:<sessionID>`, doc 09 « Fin de partie »
+/// — indépendant de la partie courante, pour qu'un changement de partie n'oblige jamais à rouvrir
+/// le canal), où l'hôte et chaque pair rejoignent le même canal :
 /// - **Presence** identifie qui est là — l'hôte s'annonce toujours sous la clé constante `"host"`
 ///   (pas besoin qu'un pair la connaisse à l'avance), chaque pair sous son propre `deviceID`.
 ///   Une déconnexion (y compris abrupte : app tuée, réseau perdu) déclenche un événement de
@@ -21,8 +22,9 @@ import Supabase
 ///   d'une caractéristique) : un message tient dans un seul frame JSON.
 ///
 /// **Découverte** : `cacompte_open_games` (Postgres, migration `supabase/migrations`) résout un code
-/// d'appairage tapé à la main vers le `matchID` correspondant — remplace le scan Wi-Fi/BLE, qui
-/// n'a jamais eu besoin d'exister avec Supabase (le code suffit, pas de proximité physique).
+/// d'appairage tapé à la main vers le `sessionID` correspondant (et, pour l'affichage seulement,
+/// la partie en cours — `matchID`/`gameID`) — remplace le scan Wi-Fi/BLE, qui n'a jamais eu besoin
+/// d'exister avec Supabase (le code suffit, pas de proximité physique).
 public final class SupabaseTransport: @unchecked Sendable {
     private let client: SupabaseClient
     private let deviceID: String
@@ -31,7 +33,7 @@ public final class SupabaseTransport: @unchecked Sendable {
 
     // MARK: Hôte
     private var hostChannel: RealtimeChannelV2?
-    private var hostMatchID: UUID?
+    private var hostSessionID: UUID?
     private var sessionsByPeerID: [String: SupabaseTransportSession] = [:]
     private let acceptedStream: AsyncStream<any TransportSession>
     private let acceptedContinuation: AsyncStream<any TransportSession>.Continuation
@@ -58,14 +60,19 @@ public final class SupabaseTransport: @unchecked Sendable {
 
     // MARK: - Hôte
 
-    public func advertise(matchID: UUID, gameID: String, participantCount: Int, pairingCode: String) async throws {
-        hostMatchID = matchID
+    /// `sessionID` identifie la **session de partage** (doc 09 « Fin de partie ») — adresse le
+    /// canal Realtime et la ligne `cacompte_open_games`, stable pour toute la durée de la session.
+    /// `matchID`/`gameID`/`participantCount` décrivent la partie *courante* : à chaque changement
+    /// de partie au sein de la même session, `updateActiveMatch` les met à jour sans jamais
+    /// rappeler `advertise` (qui ouvrirait un nouveau canal et casserait les pairs déjà connectés).
+    public func advertise(sessionID: UUID, matchID: UUID, gameID: String, participantCount: Int, pairingCode: String) async throws {
+        hostSessionID = sessionID
         try await client.from("cacompte_open_games").upsert(
-            OpenGameRow(pairingCode: pairingCode, matchID: matchID, gameID: gameID, participantCount: participantCount, deviceName: deviceName, platform: platform.rawValue),
+            OpenGameRow(pairingCode: pairingCode, sessionID: sessionID, matchID: matchID, gameID: gameID, participantCount: participantCount, deviceName: deviceName, platform: platform.rawValue),
             onConflict: "pairing_code"
         ).execute()
 
-        let channel = client.channel("match:\(matchID.uuidString)") { config in
+        let channel = client.channel("session:\(sessionID.uuidString)") { config in
             config.presence.key = Self.hostPresenceKey
         }
         hostChannel = channel
@@ -101,6 +108,19 @@ public final class SupabaseTransport: @unchecked Sendable {
         try await channel.track(["deviceName": deviceName])
     }
 
+    /// Doc 09 « Fin de partie » — appelé à chaque fois que l'hôte enchaîne une nouvelle partie
+    /// (même jeu rejoué ou jeu différent) au sein de la même session : met à jour la ligne
+    /// existante plutôt que d'en créer une nouvelle, purement pour que quiconque lit
+    /// `cacompte_open_games` directement voie une partie courante à jour. Ne touche ni au canal
+    /// Realtime ni aux pairs déjà connectés — c'est `LiveSession.switchMatch` qui les prévient.
+    public func updateActiveMatch(matchID: UUID, gameID: String, participantCount: Int) async throws {
+        guard let hostSessionID else { return }
+        try await client.from("cacompte_open_games")
+            .update(ActiveMatchUpdate(matchID: matchID, gameID: gameID, participantCount: participantCount))
+            .eq("session_id", value: hostSessionID.uuidString)
+            .execute()
+    }
+
     public func stopAdvertising() async {
         hostStatusSubscription?.cancel()
         hostStatusSubscription = nil
@@ -113,10 +133,10 @@ public final class SupabaseTransport: @unchecked Sendable {
             await channel.unsubscribe()
         }
         hostChannel = nil
-        if let matchID = hostMatchID {
-            _ = try? await client.from("cacompte_open_games").delete().eq("match_id", value: matchID.uuidString).execute()
+        if let hostSessionID {
+            _ = try? await client.from("cacompte_open_games").delete().eq("session_id", value: hostSessionID.uuidString).execute()
         }
-        hostMatchID = nil
+        hostSessionID = nil
     }
 
     public func acceptIncoming() -> AsyncStream<any TransportSession> {
@@ -178,7 +198,7 @@ public final class SupabaseTransport: @unchecked Sendable {
             throw SupabaseTransportError.gameNotFound
         }
         return DiscoveredHost(
-            id: row.matchID,
+            id: row.sessionID,
             deviceName: row.deviceName,
             gameID: row.gameID,
             participantCount: row.participantCount,
@@ -187,7 +207,7 @@ public final class SupabaseTransport: @unchecked Sendable {
     }
 
     public func connect(to host: DiscoveredHost) async throws -> any TransportSession {
-        let channel = client.channel("match:\(host.id.uuidString)") { [deviceID] config in
+        let channel = client.channel("session:\(host.id.uuidString)") { [deviceID] config in
             config.presence.key = deviceID
         }
         let session = SupabaseTransportSession(channel: channel, selfID: deviceID, peerID: Self.hostPresenceKey, ownsChannel: true)
@@ -247,6 +267,7 @@ public enum SupabaseTransportError: Error, Sendable, Equatable {
 
 struct OpenGameRow: Codable {
     let pairingCode: String
+    let sessionID: UUID
     let matchID: UUID
     let gameID: String
     let participantCount: Int
@@ -255,11 +276,26 @@ struct OpenGameRow: Codable {
 
     enum CodingKeys: String, CodingKey {
         case pairingCode = "pairing_code"
+        case sessionID = "session_id"
         case matchID = "match_id"
         case gameID = "game_id"
         case participantCount = "participant_count"
         case deviceName = "device_name"
         case platform
+    }
+}
+
+/// Corps de la requête `update` de `updateActiveMatch` — seules les colonnes qui décrivent la
+/// partie courante changent à un changement de partie, jamais `pairing_code`/`session_id`.
+private struct ActiveMatchUpdate: Encodable {
+    let matchID: UUID
+    let gameID: String
+    let participantCount: Int
+
+    enum CodingKeys: String, CodingKey {
+        case matchID = "match_id"
+        case gameID = "game_id"
+        case participantCount = "participant_count"
     }
 }
 

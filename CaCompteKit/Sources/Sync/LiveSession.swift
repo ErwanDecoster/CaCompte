@@ -35,7 +35,10 @@ public actor LiveSession {
 
     private var clock = LamportClock()
     private var role: Role = .observer
-    private var matchID: UUID?
+    /// Identifiant de la **session de partage**, stable tant qu'elle dure (doc 09 « Fin de
+    /// partie ») — distinct de `hostState?.matchID`/`MatchState.matchID`, qui change à chaque
+    /// nouvelle partie sans jamais toucher à celui-ci ni à `pairingKey`, qui en dérive.
+    private var sessionID: UUID?
     private var pairingKey: SymmetricKey?
 
     // Hôte uniquement : état de vérité pour arbitrer les propositions.
@@ -86,6 +89,12 @@ public actor LiveSession {
     private let hostLeftContinuation: AsyncStream<Void>.Continuation
     public nonisolated let hostLeft: AsyncStream<Void>
 
+    /// Doc 09 « Fin de partie » — un pair non-hôte s'y abonne pour repartir d'un journal vide
+    /// quand l'hôte enchaîne une nouvelle partie (même jeu rejoué ou jeu différent) sans rompre la
+    /// session : le journal reçu ici n'a aucun événement en commun avec le précédent.
+    private let matchChangedContinuation: AsyncStream<[StampedEvent]>.Continuation
+    public nonisolated let matchChanged: AsyncStream<[StampedEvent]>
+
     private var welcomeContinuation: CheckedContinuation<Void, Error>?
 
     /// Doc 09 « Appairage et chiffrement » — affiché en clair par l'hôte à qui rejoint. Exposé
@@ -110,22 +119,35 @@ public actor LiveSession {
         (rejections, rejectionContinuation) = AsyncStream.makeStream()
         (peerUpdates, peerUpdateContinuation) = AsyncStream.makeStream()
         (hostLeft, hostLeftContinuation) = AsyncStream.makeStream()
+        (matchChanged, matchChangedContinuation) = AsyncStream.makeStream()
     }
 
     // MARK: - Hôte
 
-    /// `initialLog` est rejoué immédiatement : l'hôte doit connaître l'état courant pour arbitrer
-    /// dès la première proposition, pas seulement à la première manche saisie après le partage.
-    public func startHosting(log initialLog: [StampedEvent], pairingCode: String, allowsContributors: Bool = true) throws {
-        let replayed = try engine.replay(initialLog, catalog: catalog)
+    /// Rejoue `log` et met à jour l'état d'arbitrage (`hostState`/`hostRules`/`hostDefinition`),
+    /// partagé par `startHosting`, `syncHostLog` et `switchMatch` — les trois façons dont l'hôte
+    /// peut se retrouver à arbitrer un nouveau journal.
+    private func applyHostLog(_ log: [StampedEvent]) throws -> MatchState {
+        let replayed = try engine.replay(log, catalog: catalog)
         hostState = replayed
         hostDefinition = try catalog.definition(for: replayed.gameID, version: replayed.rulesVersion)
         hostRules = try catalog.rules(for: replayed.gameID, version: replayed.rulesVersion)
-        hostLog = initialLog
+        hostLog = log
+        return replayed
+    }
+
+    /// `initialLog` est rejoué immédiatement : l'hôte doit connaître l'état courant pour arbitrer
+    /// dès la première proposition, pas seulement à la première manche saisie après le partage.
+    /// `sessionID` identifie la **session de partage** (doc 09 « Fin de partie ») — distinct de la
+    /// partie rejouée ici, il reste stable même quand l'hôte enchaîne une autre partie ensuite
+    /// (voir `switchMatch`), pour que la clé qui en dérive (`pairingKey`) ne change jamais tant que
+    /// la session dure.
+    public func startHosting(log initialLog: [StampedEvent], sessionID: UUID, pairingCode: String, allowsContributors: Bool = true) throws {
+        _ = try applyHostLog(initialLog)
         role = .host
-        matchID = replayed.matchID
+        self.sessionID = sessionID
         clock = LamportClock(startingAt: initialLog.map(\.lamport).max() ?? 0)
-        pairingKey = SessionCrypto.deriveKey(pairingCode: pairingCode, matchID: replayed.matchID)
+        pairingKey = SessionCrypto.deriveKey(pairingCode: pairingCode, sessionID: sessionID)
         self.allowsContributors = allowsContributors
     }
 
@@ -134,21 +156,28 @@ public actor LiveSession {
     /// (saisie, annulation, fin de partie) et diffuse aux pairs connectés les seuls événements
     /// apparus depuis le dernier appel. Le journal n'est jamais raccourci (doc 04 « Event
     /// sourcing » — une annulation ajoute un `roundRemoved`, elle ne retire rien) : la longueur
-    /// suffit à identifier ce qui est nouveau.
+    /// suffit à identifier ce qui est nouveau. Ne concerne que la partie déjà en cours — voir
+    /// `switchMatch` pour en démarrer une nouvelle sans rompre la session.
     public func syncHostLog(_ log: [StampedEvent]) async throws {
         let newEvents = log.count > hostLog.count ? Array(log.suffix(from: hostLog.count)) : []
-        let replayed = try engine.replay(log, catalog: catalog)
-        hostState = replayed
-        hostDefinition = try catalog.definition(for: replayed.gameID, version: replayed.rulesVersion)
-        hostRules = try catalog.rules(for: replayed.gameID, version: replayed.rulesVersion)
-        hostLog = log
-        matchID = replayed.matchID
+        _ = try applyHostLog(log)
         if let latest = log.map(\.lamport).max() {
             clock = LamportClock(startingAt: latest)
         }
         if !newEvents.isEmpty {
             await broadcastToConnectedPeers(.events(newEvents))
         }
+    }
+
+    /// Doc 09 « Fin de partie » — l'hôte enchaîne une nouvelle partie (même jeu rejoué ou jeu
+    /// différent) sans rompre la session : garde le canal, `pairingKey`/`sessionID` et les pairs
+    /// déjà connectés, ne remplace que l'état arbitré. Diffusé à tous les pairs déjà connectés
+    /// (`.matchChanged`) — contrairement à `welcome`, qui ne sert qu'au pair qui vient de
+    /// rejoindre — pour qu'ils repartent d'un journal vide plutôt que d'y ajouter ces événements.
+    public func switchMatch(log initialLog: [StampedEvent]) async throws {
+        _ = try applyHostLog(initialLog)
+        clock = LamportClock(startingAt: initialLog.map(\.lamport).max() ?? 0)
+        await broadcastToConnectedPeers(.matchChanged(log: initialLog))
     }
 
     /// Doc utilisateur P9 — modifiable en cours de partage : s'applique aux prochaines connexions
@@ -163,8 +192,8 @@ public actor LiveSession {
     /// listé comme connecté (bug observé en recette).
     public func stopHosting() async {
         for connection in peerConnections.values {
-            if let pairingKey, let matchID {
-                try? await send(WireMessage(matchID: matchID, kind: .goodbye), to: connection.session, key: pairingKey)
+            if let pairingKey, let sessionID {
+                try? await send(WireMessage(sessionID: sessionID, kind: .goodbye), to: connection.session, key: pairingKey)
             }
             await connection.session.close()
         }
@@ -208,7 +237,7 @@ public actor LiveSession {
         case .goodbye:
             peerConnections[peerID] = nil
             publishPeerUpdate()
-        case .welcome, .events, .rejection:
+        case .welcome, .events, .matchChanged, .rejection:
             break // jamais envoyés par un pair vers l'hôte
         }
     }
@@ -219,8 +248,8 @@ public actor LiveSession {
     }
 
     private func sendWelcome(to session: any TransportSession, role: Role) async {
-        guard let pairingKey, let matchID else { return }
-        try? await send(WireMessage(matchID: matchID, kind: .welcome(log: hostLog, role: role)), to: session, key: pairingKey)
+        guard let pairingKey, let sessionID else { return }
+        try? await send(WireMessage(sessionID: sessionID, kind: .welcome(log: hostLog, role: role)), to: session, key: pairingKey)
     }
 
     private func arbitrate(_ proposed: StampedEvent, from peerID: UUID, session: any TransportSession) async {
@@ -261,13 +290,13 @@ public actor LiveSession {
     }
 
     private func reject(_ eventID: UUID, reason: String, to session: any TransportSession) async {
-        guard let pairingKey, let matchID else { return }
-        try? await send(WireMessage(matchID: matchID, kind: .rejection(eventID: eventID, reason: reason)), to: session, key: pairingKey)
+        guard let pairingKey, let sessionID else { return }
+        try? await send(WireMessage(sessionID: sessionID, kind: .rejection(eventID: eventID, reason: reason)), to: session, key: pairingKey)
     }
 
     private func broadcastToConnectedPeers(_ kind: WireMessage.Kind) async {
-        guard let pairingKey, let matchID else { return }
-        let message = WireMessage(matchID: matchID, kind: kind)
+        guard let pairingKey, let sessionID else { return }
+        let message = WireMessage(sessionID: sessionID, kind: kind)
         for connection in peerConnections.values {
             try? await send(message, to: connection.session, key: pairingKey)
         }
@@ -282,7 +311,7 @@ public actor LiveSession {
     /// « Connexion à la partie… » indéfiniment, sans savoir que quelque chose avait échoué.
     public func attachToHost(
         _ session: any TransportSession,
-        matchID: UUID,
+        sessionID: UUID,
         pairingCode: String,
         requestedRole: Role,
         deviceName: String,
@@ -290,9 +319,9 @@ public actor LiveSession {
         timeout: Duration = .seconds(8)
     ) async throws {
         role = requestedRole
-        self.matchID = matchID
+        self.sessionID = sessionID
         hostConnection = session
-        let key = SessionCrypto.deriveKey(pairingCode: pairingCode, matchID: matchID)
+        let key = SessionCrypto.deriveKey(pairingCode: pairingCode, sessionID: sessionID)
         pairingKey = key
 
         // `welcomeContinuation` est posé avant tout `await` : le `hello` est envoyé et l'écoute
@@ -306,7 +335,7 @@ public actor LiveSession {
                 guard let self else { return }
                 do {
                     try await self.send(
-                        WireMessage(matchID: matchID, kind: .hello(deviceName: deviceName, appVersion: appVersion, platform: .apple, role: requestedRole, deviceID: self.deviceID)),
+                        WireMessage(sessionID: sessionID, kind: .hello(deviceName: deviceName, appVersion: appVersion, platform: .apple, role: requestedRole, deviceID: self.deviceID)),
                         to: session,
                         key: key
                     )
@@ -338,8 +367,8 @@ public actor LiveSession {
     /// recette).
     public func leave() async {
         guard role != .host, let hostConnection else { return }
-        if let pairingKey, let matchID {
-            try? await send(WireMessage(matchID: matchID, kind: .goodbye), to: hostConnection, key: pairingKey)
+        if let pairingKey, let sessionID {
+            try? await send(WireMessage(sessionID: sessionID, kind: .goodbye), to: hostConnection, key: pairingKey)
         }
         await hostConnection.close()
         self.hostConnection = nil
@@ -374,6 +403,11 @@ public actor LiveSession {
                 clock.observe(stamped.lamport)
                 eventContinuation.yield(stamped)
             }
+        case .matchChanged(let log):
+            if let latest = log.map(\.lamport).max() {
+                clock = LamportClock(startingAt: latest)
+            }
+            matchChangedContinuation.yield(log)
         case .rejection(let eventID, let reason):
             rejectionContinuation.yield((eventID: eventID, reason: reason))
         case .goodbye:
@@ -393,10 +427,10 @@ public actor LiveSession {
             let stamped = try hostCommit(event)
             await broadcastToConnectedPeers(.events([stamped]))
         case .contributor:
-            guard let hostConnection, let pairingKey, let matchID else { throw SessionError.notConnected }
+            guard let hostConnection, let pairingKey, let sessionID else { throw SessionError.notConnected }
             let optimistic = stamp(event)
             eventContinuation.yield(optimistic) // application optimiste locale (doc 09)
-            try await send(WireMessage(matchID: matchID, kind: .proposal([optimistic])), to: hostConnection, key: pairingKey)
+            try await send(WireMessage(sessionID: sessionID, kind: .proposal([optimistic])), to: hostConnection, key: pairingKey)
         case .observer:
             throw SessionError.notAuthorized
         }

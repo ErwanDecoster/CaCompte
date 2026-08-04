@@ -97,7 +97,7 @@ final class MatchConnectionCoordinator {
         let liveSession = LiveSession(deviceID: DeviceIdentity.current, catalog: catalog)
         try await liveSession.attachToHost(
             transportSession,
-            matchID: host.id,
+            sessionID: host.id,
             pairingCode: persisted.pairingCode,
             requestedRole: persisted.role,
             deviceName: persisted.deviceName,
@@ -155,11 +155,13 @@ final class MatchConnectionCoordinator {
     }
 }
 
-/// Ce qu'il faut retenir pour reprendre une partie partagée sans redemander le code d'appairage —
+/// Ce qu'il faut retenir pour reprendre une session partagée sans redemander le code d'appairage —
 /// survit à un relancement du process (`UserDefaults`, même convention que `DeviceIdentity`).
-/// Ne retient pas le `matchID` : `SupabaseTransport.resolveGame(code:)` le résout à nouveau à
-/// chaque appel, plus robuste qu'un id mis en cache (le code, lui, redevient invalide de lui-même
-/// une fois la partie terminée — voir `SupabaseTransport.stopAdvertising`).
+/// Ne retient pas le `sessionID` : `SupabaseTransport.resolveGame(code:)` le résout à nouveau à
+/// chaque appel, plus robuste qu'un id mis en cache. Doc 09 « Fin de partie », révisé — le code
+/// reste valide tant que la session dure, même quand l'hôte enchaîne une autre partie ; il ne
+/// redevient invalide que quand l'hôte arrête explicitement le partage (voir
+/// `SupabaseTransport.stopAdvertising`), plus seulement à la fin d'une partie.
 private struct PersistedSession: Codable {
     let pairingCode: String
     let role: Role

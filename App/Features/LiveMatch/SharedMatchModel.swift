@@ -78,7 +78,21 @@ final class SharedMatchModel {
                 onHostLeft?(self)
             }
         }
-        tasks = [eventsTask, rejectionsTask, hostLeftTask]
+        // Doc 09 « Fin de partie » — l'hôte enchaîne une nouvelle partie (même jeu rejoué ou jeu
+        // différent) sans rompre la connexion : le journal reçu ici n'a aucun événement en commun
+        // avec la partie précédente, il faut donc repartir d'un journal vide plutôt que d'y
+        // ajouter ces événements (qui échoueraient de toute façon à rejouer ensemble).
+        let matchChangedTask = Task { [weak self] in
+            for await newLog in session.matchChanged {
+                guard let self else { return }
+                self.log = []
+                self.latestRejectionReason = nil
+                for stamped in newLog {
+                    self.apply(stamped)
+                }
+            }
+        }
+        tasks = [eventsTask, rejectionsTask, hostLeftTask, matchChangedTask]
     }
 
     func propose(_ inputs: [ScoreInput], note: String? = nil) async {
