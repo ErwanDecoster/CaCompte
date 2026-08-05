@@ -111,6 +111,14 @@ public actor LiveSession {
         role
     }
 
+    /// Doc 09 « Fin de partie » — identifiant de la session en cours, hôte ou pair (`nil` avant
+    /// `startHosting`/`attachToHost`). `MatchLiveActivityController` s'en sert pour donner à la
+    /// Live Activity une clé stable qui survit à un changement de partie, plutôt que d'en recréer
+    /// une par `matchID`.
+    public func currentSessionID() -> UUID? {
+        sessionID
+    }
+
     public init(deviceID: String, catalog: GameCatalog, engine: MatchEngine = MatchEngine()) {
         self.deviceID = deviceID
         self.catalog = catalog

@@ -21,7 +21,7 @@ struct MatchLiveActivityWidget: Widget {
             // pourrait croire en ne testant que du texte très court.
             DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
-                    Label(context.attributes.gameName, systemImage: context.attributes.gameSymbol)
+                    Label(context.state.gameName, systemImage: context.state.gameSymbol)
                         .font(.caption)
                         .lineLimit(1)
                         .padding(.leading, 4)
@@ -45,7 +45,7 @@ struct MatchLiveActivityWidget: Widget {
                     .padding(.top, 4)
                 }
             } compactLeading: {
-                Image(systemName: context.attributes.gameSymbol)
+                Image(systemName: context.state.gameSymbol)
             } compactTrailing: {
                 // Doc utilisateur — remontée : n'affichait que le score du premier joueur, alors
                 // que c'est justement l'endroit le plus regardé d'un coup d'œil. `A 12 · B 18`
@@ -57,7 +57,7 @@ struct MatchLiveActivityWidget: Widget {
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
             } minimal: {
-                Image(systemName: context.attributes.gameSymbol)
+                Image(systemName: context.state.gameSymbol)
             }
             .widgetURL(URL(string: "cacompte://resume"))
         }
@@ -82,7 +82,7 @@ private struct MatchLiveActivityLockScreenView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
-                Label(context.attributes.gameName, systemImage: context.attributes.gameSymbol)
+                Label(context.state.gameName, systemImage: context.state.gameSymbol)
                     .font(.headline)
                     .lineLimit(1)
                 Spacer(minLength: 8)

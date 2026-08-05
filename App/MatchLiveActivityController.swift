@@ -7,7 +7,7 @@ import Sync
 /// Doc utilisateur — Live Activity (roadmap P9) : point d'entrée unique pour les trois écrans de
 /// saisie (`LiveMatchModel`, `YamsSheetModel`, `BeloteRoundModel`), qui partagent tous la même
 /// forme `state`/`definition`/`rules` (doc « point d'aiguillage unique », `MatchPlayView`). Un
-/// dictionnaire par id de partie plutôt qu'un singleton simple : rien n'empêche en théorie deux
+/// dictionnaire par clé d'activité plutôt qu'un singleton simple : rien n'empêche en théorie deux
 /// parties d'être à l'écran l'une après l'autre dans la même session.
 ///
 /// Doc utilisateur P9 — remontée : un `Activity.update` local ne peut s'exécuter que pendant que
@@ -19,12 +19,35 @@ import Sync
 /// l'écran verrouillé de chaque pair même suspendu. La mise à jour locale (`activity.update`) reste
 /// en place à côté : instantanée pour l'appareil qui tourne encore, le push ne fait que couvrir les
 /// autres.
+///
+/// Doc 09 « Fin de partie » — la clé d'activité (`activityKey`) est `"session:<sessionID>"` tant
+/// qu'une session de partage est active, `"match:<matchID>"` sinon (partie solo, ou pair non
+/// partagé). C'est ce qui permet à un changement de partie au sein d'une même session de
+/// **réutiliser la même Activity** (`activity.update`, jamais `end` + `request`) : les jetons de
+/// push déjà enregistrés sous cette clé restent valides, donc un appareil suspendu qui n'a jamais
+/// eu l'occasion de créer une nouvelle Activity pour la partie suivante reçoit quand même la mise
+/// à jour.
 @MainActor
 enum MatchLiveActivityController {
-    private static var activities: [UUID: Activity<MatchActivityAttributes>] = [:]
-    private static var pushTokenTasks: [UUID: Task<Void, Never>] = [:]
+    private static var activities: [String: Activity<MatchActivityAttributes>] = [:]
+    private static var pushTokenTasks: [String: Task<Void, Never>] = [:]
+    /// Résout un `matchID` vers la clé d'activité sous laquelle il est actuellement suivi —
+    /// `stopTracking(matchID:)`/`markStale(matchID:)` ne connaissent que le `matchID` (leurs
+    /// appelants, `SharedMatchModel`, n'ont pas besoin de savoir si une session est active), cette
+    /// table leur évite de le recalculer.
+    private static var keysByMatchID: [UUID: String] = [:]
 
-    static func refresh(definition: GameDefinition, rules: any GameRules, state: MatchState, isAuthoritative: Bool = false) {
+    private static func activityKey(matchID: UUID, sessionID: UUID?) -> String {
+        if let sessionID {
+            return "session:\(sessionID.uuidString)"
+        }
+        return "match:\(matchID.uuidString)"
+    }
+
+    /// `sessionID` — fourni par l'appelant quand cette partie est diffusée par une session de
+    /// partage active (hôte : `LiveShareCoordinator.shared.sessionID` ; pair :
+    /// `LiveSession.currentSessionID()`), `nil` sinon (partie solo).
+    static func refresh(definition: GameDefinition, rules: any GameRules, state: MatchState, isAuthoritative: Bool = false, sessionID: UUID? = nil) {
         guard ActivityAuthorizationInfo().areActivitiesEnabled else {
             print("[MatchLiveActivityController] Live Activities disabled by system/user")
             return
@@ -35,10 +58,16 @@ enum MatchLiveActivityController {
             .sorted { $0.rank < $1.rank }
             .prefix(4)
             .map { MatchActivityAttributes.ContentState.Standing(id: $0.participantID, name: names[$0.participantID] ?? "", score: $0.score) }
-        let content = MatchActivityAttributes.ContentState(roundNumber: state.rounds.count, standings: Array(standings))
-        let hasEnded = state.status == .ended || state.status == .abandoned
         let matchID = state.matchID
-        let attributes = MatchActivityAttributes(matchID: matchID, gameName: definition.name.fr, gameSymbol: definition.symbol)
+        let content = MatchActivityAttributes.ContentState(
+            matchID: matchID,
+            gameName: definition.name.fr,
+            gameSymbol: definition.symbol,
+            roundNumber: state.rounds.count,
+            standings: Array(standings)
+        )
+        let hasEnded = state.status == .ended || state.status == .abandoned
+        let key = activityKey(matchID: matchID, sessionID: sessionID)
 
         // Doc utilisateur — tout le travail (y compris la lecture/écriture d'`activities`) se
         // fait à l'intérieur de cette tâche : `Activity` n'est pas `Sendable` côté SDK, donc le
@@ -53,17 +82,20 @@ enum MatchLiveActivityController {
                 // après la fin de partie (comportement voulu au départ, « voir le score final »),
                 // mais ça se lisait comme un bug (« la partie est finie, pourquoi c'est encore
                 // là ? »). Retrait immédiat, comme `stopTracking` ci-dessous.
-                pushTokenTasks.removeValue(forKey: matchID)?.cancel()
-                guard let found = activities.removeValue(forKey: matchID) else { return }
+                pushTokenTasks.removeValue(forKey: key)?.cancel()
+                keysByMatchID[matchID] = nil
+                guard let found = activities.removeValue(forKey: key) else { return }
                 nonisolated(unsafe) let activity = found
                 await activity.end(ActivityContent(state: content, staleDate: nil), dismissalPolicy: .immediate)
                 if isAuthoritative {
-                    await LiveActivityPushClient.push(matchID: matchID, event: "end", contentState: content)
+                    await LiveActivityPushClient.push(activityKey: key, event: "end", contentState: content)
                 }
                 return
             }
 
-            if let found = activities[matchID] {
+            keysByMatchID[matchID] = key
+
+            if let found = activities[key] {
                 nonisolated(unsafe) let activity = found
                 await activity.update(ActivityContent(state: content, staleDate: nil))
             } else {
@@ -74,7 +106,7 @@ enum MatchLiveActivityController {
                 let activity: Activity<MatchActivityAttributes>
                 do {
                     activity = try Activity.request(
-                        attributes: attributes,
+                        attributes: MatchActivityAttributes(activityKey: key),
                         content: ActivityContent(state: content, staleDate: nil),
                         pushType: .token
                     )
@@ -82,22 +114,22 @@ enum MatchLiveActivityController {
                     print("[MatchLiveActivityController] Activity.request FAILED: \(error)")
                     return
                 }
-                activities[matchID] = activity
+                activities[key] = activity
                 nonisolated(unsafe) let startedActivity = activity
-                pushTokenTasks[matchID] = Task {
+                pushTokenTasks[key] = Task {
                     let deviceID = DeviceIdentity.current
-                    print("[MatchLiveActivityController] waiting for pushTokenUpdates match=\(matchID) device=\(deviceID)")
+                    print("[MatchLiveActivityController] waiting for pushTokenUpdates key=\(key) device=\(deviceID)")
                     for await tokenData in startedActivity.pushTokenUpdates {
                         let pushToken = tokenData.map { String(format: "%02x", $0) }.joined()
                         print("[MatchLiveActivityController] got push token: \(pushToken)")
-                        await LiveActivityPushClient.registerToken(matchID: matchID, deviceID: deviceID, pushToken: pushToken)
+                        await LiveActivityPushClient.registerToken(activityKey: key, deviceID: deviceID, pushToken: pushToken)
                     }
-                    print("[MatchLiveActivityController] pushTokenUpdates stream ended match=\(matchID)")
+                    print("[MatchLiveActivityController] pushTokenUpdates stream ended key=\(key)")
                 }
             }
 
             if isAuthoritative {
-                await LiveActivityPushClient.push(matchID: matchID, event: "update", contentState: content)
+                await LiveActivityPushClient.push(activityKey: key, event: "update", contentState: content)
             }
         }
     }
@@ -106,8 +138,9 @@ enum MatchLiveActivityController {
     /// remontée utilisateur) : retrait immédiat, même logique que la fin de partie ci-dessus.
     static func stopTracking(matchID: UUID) {
         Task { @MainActor in
-            pushTokenTasks.removeValue(forKey: matchID)?.cancel()
-            guard let found = activities.removeValue(forKey: matchID) else { return }
+            guard let key = keysByMatchID.removeValue(forKey: matchID) else { return }
+            pushTokenTasks.removeValue(forKey: key)?.cancel()
+            guard let found = activities.removeValue(forKey: key) else { return }
             nonisolated(unsafe) let activity = found
             await activity.end(nil, dismissalPolicy: .immediate)
         }
@@ -121,11 +154,14 @@ enum MatchLiveActivityController {
     /// de nouveaux événements arrivent (reconnexion réussie).
     static func markStale(matchID: UUID) {
         Task { @MainActor in
-            guard let found = activities[matchID] else { return }
+            guard let key = keysByMatchID[matchID], let found = activities[key] else { return }
             nonisolated(unsafe) let activity = found
             let current = activity.content.state
             guard !current.isStale else { return }
             let staleContent = MatchActivityAttributes.ContentState(
+                matchID: current.matchID,
+                gameName: current.gameName,
+                gameSymbol: current.gameSymbol,
                 roundNumber: current.roundNumber,
                 standings: current.standings,
                 isStale: true

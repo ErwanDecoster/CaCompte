@@ -58,7 +58,7 @@ final class SharedMatchModel {
 
         let eventsTask = Task { [weak self] in
             for await stamped in session.events {
-                self?.apply(stamped)
+                await self?.apply(stamped)
             }
         }
         let rejectionsTask = Task { [weak self] in
@@ -88,7 +88,7 @@ final class SharedMatchModel {
                 self.log = []
                 self.latestRejectionReason = nil
                 for stamped in newLog {
-                    self.apply(stamped)
+                    await self.apply(stamped)
                 }
             }
         }
@@ -123,7 +123,7 @@ final class SharedMatchModel {
         tasks = []
     }
 
-    private func apply(_ stamped: StampedEvent) {
+    private func apply(_ stamped: StampedEvent) async {
         // Doc 04 « Event sourcing » — dédoublonnage par id : la confirmation d'une proposition
         // optimiste porte le même id qu'elle (doc 09), l'ajouter une seconde fois ne changerait
         // rien au résultat, mais autant éviter de faire grossir le journal pour rien.
@@ -144,8 +144,10 @@ final class SharedMatchModel {
             }
         }
 
+        // Doc 09 « Fin de partie » — la clé d'Activity doit être celle de la session (stable
+        // même si l'hôte enchaîne une autre partie), jamais celle du seul `matchID` courant.
         if let definition, let rules {
-            MatchLiveActivityController.refresh(definition: definition, rules: rules, state: replayed)
+            MatchLiveActivityController.refresh(definition: definition, rules: rules, state: replayed, sessionID: await session.currentSessionID())
         }
     }
 

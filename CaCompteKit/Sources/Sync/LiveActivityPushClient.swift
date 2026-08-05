@@ -14,12 +14,12 @@ public enum LiveActivityPushClient {
         supabaseURL: SupabaseSyncConfig.projectURL, supabaseKey: SupabaseSyncConfig.anonKey)
 
     private struct TokenRow: Encodable {
-        let matchID: UUID
+        let activityKey: String
         let deviceID: String
         let pushToken: String
 
         enum CodingKeys: String, CodingKey {
-            case matchID = "match_id"
+            case activityKey = "activity_key"
             case deviceID = "device_id"
             case pushToken = "push_token"
         }
@@ -27,31 +27,33 @@ public enum LiveActivityPushClient {
 
     /// Doc utilisateur — appelé à chaque rotation de jeton signalée par
     /// `Activity.pushTokenUpdates` (création de la Live Activity, ou rotation ultérieure par
-    /// iOS) : `upsert` sur la clé primaire `(match_id, device_id)` remplace toujours l'ancien
-    /// jeton plutôt que d'en accumuler plusieurs par appareil.
+    /// iOS) : `upsert` sur la clé primaire `(activity_key, device_id)` remplace toujours l'ancien
+    /// jeton plutôt que d'en accumuler plusieurs par appareil. Doc 09 « Fin de partie » —
+    /// `activityKey` identifie la session de partage (stable au changement de partie), pas
+    /// forcément la seule partie courante — voir `MatchLiveActivityController.activityKey`.
     ///
     /// `returning: .minimal` explicite — sans policy `select` pour l'anon sur cette table
     /// (volontaire, `supabase/migrations`), le comportement par défaut de `upsert`
     /// (`.representation`, qui tente de relire la ligne pour construire la réponse) échoue avec
     /// une erreur RLS trompeuse même quand l'insert a réellement eu lieu.
-    public static func registerToken(matchID: UUID, deviceID: String, pushToken: String) async {
+    public static func registerToken(activityKey: String, deviceID: String, pushToken: String) async {
         print("[LiveActivityPushClient] BUILD-MARKER-MINIMAL-FIX registerToken called")
         do {
             try await client.from("cacompte_live_activity_tokens")
                 .upsert(
-                    TokenRow(matchID: matchID, deviceID: deviceID, pushToken: pushToken),
-                    onConflict: "match_id,device_id",
+                    TokenRow(activityKey: activityKey, deviceID: deviceID, pushToken: pushToken),
+                    onConflict: "activity_key,device_id",
                     returning: .minimal
                 )
                 .execute()
-            print("[LiveActivityPushClient] registerToken OK match=\(matchID) device=\(deviceID)")
+            print("[LiveActivityPushClient] registerToken OK key=\(activityKey) device=\(deviceID)")
         } catch {
             print("[LiveActivityPushClient] registerToken FAILED: \(error)")
         }
     }
 
     private struct PushBody<Content: Encodable>: Encodable {
-        let matchID: UUID
+        let activityKey: String
         let event: String
         let contentState: Content
     }
@@ -62,7 +64,7 @@ public enum LiveActivityPushClient {
     /// périmé ne doit jamais faire échouer la validation d'une manche, seulement priver le pair
     /// concerné d'une mise à jour en arrière-plan (son prochain retour au premier plan
     /// resynchronise de toute façon tout via `MatchConnectionCoordinator`).
-    public static func push(matchID: UUID, event: String, contentState: some Encodable) async {
+    public static func push(activityKey: String, event: String, contentState: some Encodable) async {
         guard
             let url = URL(
                 string:
@@ -75,7 +77,7 @@ public enum LiveActivityPushClient {
         request.setValue(
             "Bearer \(SupabaseSyncConfig.anonKey)", forHTTPHeaderField: "Authorization")
         request.httpBody = try? JSONEncoder().encode(
-            PushBody(matchID: matchID, event: event, contentState: contentState))
+            PushBody(activityKey: activityKey, event: event, contentState: contentState))
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
             let status = (response as? HTTPURLResponse)?.statusCode ?? -1

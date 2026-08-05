@@ -9,8 +9,18 @@ import Foundation
 /// n'existe pas sur macOS (`Package.swift` déclare aussi cette plateforme, doc roadmap « Après la
 /// v1 ») — tout le fichier est donc exclu de ce côté plutôt que de casser le build macOS du
 /// package pour un type que rien n'y consomme.
+///
+/// Doc 09 « Fin de partie » — `matchID`/`gameName`/`gameSymbol` vivent dans `ContentState`, pas
+/// dans les attributs fixes : ActivityKit ne permet aucune modification des attributs après
+/// `Activity.request`, alors qu'une session de partage peut désormais enchaîner plusieurs parties
+/// (voire plusieurs jeux) sans jamais recréer l'Activity — seul un `ContentState` mutable permet
+/// de refléter ce changement par un simple push, y compris vers un appareil suspendu qui n'a
+/// jamais eu l'occasion de créer une nouvelle Activity pour la partie suivante.
 public struct MatchActivityAttributes: ActivityAttributes {
     public struct ContentState: Codable, Hashable, Sendable {
+        public let matchID: UUID
+        public let gameName: String
+        public let gameSymbol: String
         public let roundNumber: Int
         public let standings: [Standing]
         /// Doc utilisateur — remontée : côté pair, la connexion à l'hôte peut tomber (app en
@@ -31,21 +41,22 @@ public struct MatchActivityAttributes: ActivityAttributes {
             }
         }
 
-        public init(roundNumber: Int, standings: [Standing], isStale: Bool = false) {
+        public init(matchID: UUID, gameName: String, gameSymbol: String, roundNumber: Int, standings: [Standing], isStale: Bool = false) {
+            self.matchID = matchID
+            self.gameName = gameName
+            self.gameSymbol = gameSymbol
             self.roundNumber = roundNumber
             self.standings = standings
             self.isStale = isStale
         }
     }
 
-    public let matchID: UUID
-    public let gameName: String
-    public let gameSymbol: String
+    /// Identifiant opaque et stable pour toute la durée de vie de cette Activity — utile pour le
+    /// débogage/les logs, jamais lu pour l'affichage (voir `ContentState` pour tout ce qui varie).
+    public let activityKey: String
 
-    public init(matchID: UUID, gameName: String, gameSymbol: String) {
-        self.matchID = matchID
-        self.gameName = gameName
-        self.gameSymbol = gameSymbol
+    public init(activityKey: String) {
+        self.activityKey = activityKey
     }
 }
 #endif

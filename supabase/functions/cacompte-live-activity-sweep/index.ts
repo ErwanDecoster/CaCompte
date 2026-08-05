@@ -1,47 +1,19 @@
-// Doc utilisateur P9 — seul moyen fourni par Apple de mettre à jour une Live Activity (écran
-// verrouillé / Dynamic Island) pendant que l'app est suspendue en arrière-plan : un push APNs
-// dédié (`apns-push-type: liveactivity`), envoyé ici depuis un serveur plutôt que depuis l'app
-// elle-même (qui ne tourne justement plus). Appelée par l'hôte (le seul appareil qui fait foi sur
-// le journal) juste après chaque `syncHostLog`, jamais par les pairs.
+// Doc 09 « Fin de partie » — termine une Live Activity restée inactive plus de 30 minutes (aucune
+// manche, aucun changement de partie) : remontée utilisateur, l'écran verrouillé restait affiché
+// des heures après l'arrêt réel du jeu (`markStale` grise le contenu mais ne le retire jamais).
+// Rien côté app ne peut le faire de façon fiable pendant que le processus est suspendu
+// (`Task.sleep` ne survit pas à la mise en veille) — seul un push déclenché depuis l'extérieur le
+// peut, exactement comme les mises à jour de score (`cacompte-live-activity-push`).
 //
-// Doc 09 « Fin de partie » — routée par `activityKey` (session de partage si active, sinon
-// partie), pas par `matchID` : c'est ce qui permet à un changement de partie au sein d'une même
-// session d'atteindre un appareil suspendu déjà enregistré sous cette clé, sans qu'il ait besoin
-// de créer une nouvelle Live Activity pour la nouvelle partie.
+// Appelée uniquement par un déclencheur planifié (Cron Trigger Supabase, toutes les 5-10 min),
+// jamais par l'app.
 //
-// Ne stocke jamais le score dans une colonne dédiée : uniquement les jetons de push
-// (`cacompte_live_activity_tokens`, RLS), lus ici avec la clé `service_role` (injectée
-// automatiquement par le runtime Edge Functions, jamais commit dans le repo). `last_content_state`
-// fait exception (voir plus bas) : conservé uniquement pour permettre à
-// `cacompte-live-activity-sweep` de clore proprement une Activity inactive.
-//
-// Doc utilisateur — le code de signature APNs est dupliqué avec `cacompte-live-activity-sweep`
+// Doc utilisateur — le code de signature APNs est dupliqué avec `cacompte-live-activity-push`
 // plutôt que factorisé dans un dossier `_shared` : un import relatif hors du dossier de la
 // fonction n'est pas fiable selon la méthode de déploiement (constaté en recette — le bundler
 // distant échoue à résoudre `../_shared/apns.ts`), alors que chaque fonction reste déployable
 // isolément une fois autonome.
 import { createClient } from "jsr:@supabase/supabase-js@2";
-
-interface Standing {
-  id: string;
-  name: string;
-  score: number;
-}
-
-interface ContentState {
-  matchID: string;
-  gameName: string;
-  gameSymbol: string;
-  roundNumber: number;
-  standings: Standing[];
-  isStale: boolean;
-}
-
-interface PushRequest {
-  activityKey: string;
-  event: "update" | "end";
-  contentState: ContentState;
-}
 
 const APNS_KEY_ID = Deno.env.get("APNS_KEY_ID")!;
 const APNS_TEAM_ID = Deno.env.get("APNS_TEAM_ID")!;
@@ -57,6 +29,7 @@ const APNS_HOST = APNS_ENVIRONMENT === "production"
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const INACTIVITY_THRESHOLD_MINUTES = 30;
 
 let cachedKey: CryptoKey | null = null;
 // Doc utilisateur — Apple recommande de réutiliser le même jeton fournisseur ~55 min plutôt que
@@ -103,9 +76,6 @@ async function providerToken(): Promise<string> {
   const header = base64URLFromString(JSON.stringify({ alg: "ES256", kid: APNS_KEY_ID }));
   const claims = base64URLFromString(JSON.stringify({ iss: APNS_TEAM_ID, iat: now }));
   const unsigned = `${header}.${claims}`;
-  // Doc utilisateur — `crypto.subtle.sign` avec ECDSA/P-256 rend directement la signature au
-  // format brut R||S (64 octets) qu'attend un JWT ES256 (RFC 7518), pas le DER que produit
-  // OpenSSL par défaut : aucune conversion supplémentaire n'est nécessaire ici.
   const signature = await crypto.subtle.sign(
     { name: "ECDSA", hash: "SHA-256" },
     key,
@@ -136,10 +106,15 @@ async function sendToToken(pushToken: string, body: { event: "update" | "end"; c
     body: JSON.stringify(payload),
   });
   if (response.ok) return { ok: true, shouldForget: false };
-  // Doc utilisateur — un jeton révoqué/expiré ne redeviendra jamais valide : autant nettoyer
-  // `cacompte_live_activity_tokens` tout de suite plutôt que de le retenter indéfiniment à chaque manche.
   const shouldForget = response.status === 400 || response.status === 410;
   return { ok: false, shouldForget };
+}
+
+interface TokenRow {
+  activity_key: string;
+  device_id: string;
+  push_token: string;
+  last_content_state: unknown;
 }
 
 Deno.serve(async (request) => {
@@ -147,56 +122,35 @@ Deno.serve(async (request) => {
     return new Response("Method not allowed", { status: 405 });
   }
 
-  let body: PushRequest;
-  try {
-    body = await request.json();
-  } catch {
-    return new Response("Invalid JSON", { status: 400 });
-  }
-  if (!body.activityKey || !body.contentState || !body.event) {
-    return new Response("Missing activityKey, event or contentState", { status: 400 });
-  }
-
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-  const { data: tokens, error } = await supabase
+  const threshold = new Date(Date.now() - INACTIVITY_THRESHOLD_MINUTES * 60 * 1000).toISOString();
+
+  const { data: rows, error } = await supabase
     .from("cacompte_live_activity_tokens")
-    .select("device_id, push_token")
-    .eq("activity_key", body.activityKey);
+    .select("activity_key, device_id, push_token, last_content_state")
+    .lt("updated_at", threshold);
 
   if (error) {
-    return new Response(`Failed to load tokens: ${error.message}`, { status: 500 });
+    return new Response(`Failed to load stale tokens: ${error.message}`, { status: 500 });
   }
-  if (!tokens || tokens.length === 0) {
-    return Response.json({ sent: 0, failed: 0 });
+  if (!rows || rows.length === 0) {
+    return Response.json({ ended: 0 });
   }
 
   const results = await Promise.allSettled(
-    tokens.map(async (row) => {
-      const result = await sendToToken(row.push_token, { event: body.event, contentState: body.contentState });
-      if (result.shouldForget) {
-        await supabase
-          .from("cacompte_live_activity_tokens")
-          .delete()
-          .eq("activity_key", body.activityKey)
-          .eq("device_id", row.device_id);
-      }
-      return result.ok;
+    (rows as TokenRow[]).map(async (row) => {
+      // Best-effort : que le push APNs réussisse ou non, ce jeton n'a plus de raison de rester en
+      // base une fois jugé inactif — un jeton révoqué serait de toute façon nettoyé par
+      // `cacompte-live-activity-push` au prochain essai, autant le faire tout de suite ici.
+      await sendToToken(row.push_token, { event: "end", contentState: row.last_content_state ?? {} });
+      await supabase
+        .from("cacompte_live_activity_tokens")
+        .delete()
+        .eq("activity_key", row.activity_key)
+        .eq("device_id", row.device_id);
     }),
   );
 
-  const sent = results.filter((r) => r.status === "fulfilled" && r.value).length;
-  const failed = results.length - sent;
-
-  // Doc 09 « Fin de partie » — repère d'activité pour `cacompte-live-activity-sweep` : seul un
-  // push « update » réussi compte comme signe de vie (une partie qui vient de se terminer n'a pas
-  // besoin d'être « tenue en vie » par son propre événement de fin). `last_content_state` permet
-  // au balayage de renvoyer un contenu final valide plutôt que d'inventer un contenu vide.
-  if (body.event === "update" && sent > 0) {
-    await supabase
-      .from("cacompte_live_activity_tokens")
-      .update({ updated_at: new Date().toISOString(), last_content_state: body.contentState })
-      .eq("activity_key", body.activityKey);
-  }
-
-  return Response.json({ sent, failed });
+  const ended = results.filter((r) => r.status === "fulfilled").length;
+  return Response.json({ ended, total: rows.length });
 });

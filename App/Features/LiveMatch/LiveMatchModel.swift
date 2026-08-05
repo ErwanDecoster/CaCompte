@@ -12,7 +12,7 @@ import Sync
 @Observable
 final class LiveMatchModel {
     private(set) var state: MatchState {
-        didSet { MatchLiveActivityController.refresh(definition: definition, rules: rules, state: state, isAuthoritative: true) }
+        didSet { refreshLiveActivity() }
     }
 
     private(set) var pendingScores: [Participant.ID: Int] = [:]
@@ -59,11 +59,24 @@ final class LiveMatchModel {
         self.definition = try catalog.definition(for: match.gameID, version: match.rulesVersion)
         self.rules = try catalog.rules(for: match.gameID, version: match.rulesVersion)
         self.state = try repository.loadState(match, catalog: catalog)
-        MatchLiveActivityController.refresh(definition: definition, rules: rules, state: state, isAuthoritative: true)
+        refreshLiveActivity()
         // Doc 09 « Fin de partie » — no-op si aucune session n'est active, no-op si cette partie
         // est déjà attachée ; sinon c'est cet appel qui fait qu'une nouvelle partie rejoint
         // automatiquement une session déjà en cours, sans repasser par « Partager en direct ».
         Task { await LiveShareCoordinator.shared.attach(match: match, context: context) }
+    }
+
+    /// Doc 09 « Fin de partie » — donne à `MatchLiveActivityController` la clé d'Activity qui
+    /// convient : celle de la session en cours si cette partie lui est attachée (survit à un
+    /// changement de partie), sinon celle de la partie elle-même (solo, comportement inchangé).
+    private func refreshLiveActivity() {
+        MatchLiveActivityController.refresh(
+            definition: definition,
+            rules: rules,
+            state: state,
+            isAuthoritative: true,
+            sessionID: isSharing ? shareCoordinator.sessionID : nil
+        )
     }
 
     var participants: [Participant] {

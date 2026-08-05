@@ -31,6 +31,10 @@ final class LiveShareCoordinator {
     /// active. `LiveMatchModel` compare son propre `match.id` à celui-ci pour savoir s'il est,
     /// lui, la partie affichée par la session en cours (`isSharing`).
     private(set) var attachedMatchID: UUID?
+    /// Doc 09 « Fin de partie » — identifiant stable de la session, indépendant du `matchID`
+    /// courant. `LiveMatchModel` s'en sert pour donner à `MatchLiveActivityController` une clé
+    /// d'Activity qui survit à un changement de partie (voir `MatchLiveActivityController.refresh`).
+    private(set) var sessionID: UUID?
     private(set) var allowsContributors = true
     var isSharing: Bool { session != nil }
 
@@ -83,6 +87,7 @@ final class LiveShareCoordinator {
         pairingCode = code
         self.allowsContributors = allowsContributors
         attachedMatchID = match.id
+        sessionID = newSessionID
         connectedPeers = []
 
         let acceptTask = Task { [weak self] in
@@ -156,6 +161,7 @@ final class LiveShareCoordinator {
         pairingCode = nil
         connectedPeers = []
         attachedMatchID = nil
+        sessionID = nil
         allowsContributors = true
     }
 
